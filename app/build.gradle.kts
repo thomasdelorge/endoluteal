@@ -17,8 +17,8 @@ android {
         applicationId = "io.github.thomasdelorge.endoluteal"
         minSdk = 26
         targetSdk = 35
-        versionCode = 14
-        versionName = "0.11.3"
+        versionCode = 15
+        versionName = "0.11.4"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
