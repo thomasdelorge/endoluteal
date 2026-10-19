@@ -7,6 +7,7 @@ import androidx.room.Query
 import androidx.room.Transaction
 import fr.luteal.core.data.entity.InteractionRuleEntity
 import fr.luteal.core.data.entity.MedicationEntity
+import fr.luteal.core.data.entity.MedicationContraindicationEntity
 import fr.luteal.core.data.entity.MedicationSubstanceEntity
 import fr.luteal.core.data.entity.SubstanceEntity
 import kotlinx.coroutines.flow.Flow
@@ -25,6 +26,9 @@ interface MedicationDao {
     @Query("SELECT * FROM interaction_rules ORDER BY id")
     fun observeRules(): Flow<List<InteractionRuleEntity>>
 
+    @Query("SELECT * FROM medication_contraindications")
+    fun observeContraindications(): Flow<List<MedicationContraindicationEntity>>
+
     @Query("SELECT * FROM substances")
     suspend fun substancesOnce(): List<SubstanceEntity>
 
@@ -36,6 +40,9 @@ interface MedicationDao {
 
     @Query("SELECT * FROM interaction_rules")
     suspend fun rulesOnce(): List<InteractionRuleEntity>
+
+    @Query("SELECT * FROM medication_contraindications")
+    suspend fun contraindicationsOnce(): List<MedicationContraindicationEntity>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertSubstance(entity: SubstanceEntity)
@@ -51,6 +58,15 @@ interface MedicationDao {
 
     @Query("DELETE FROM medication_substances WHERE medicationId = :medicationId")
     suspend fun deleteCompositions(medicationId: String)
+
+    @Query("DELETE FROM medication_contraindications WHERE medicationId = :medicationId")
+    suspend fun deleteContraindications(medicationId: String)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsertContraindications(rows: List<MedicationContraindicationEntity>)
+
+    @Query("DELETE FROM medication_contraindications")
+    suspend fun deleteAllContraindications()
 
     @Query("DELETE FROM interaction_rules WHERE id = :id")
     suspend fun deleteRule(id: String)
@@ -68,9 +84,15 @@ interface MedicationDao {
     suspend fun deleteAllSubstances()
 
     @Transaction
-    suspend fun replaceMedication(medication: MedicationEntity, compositions: List<MedicationSubstanceEntity>) {
+    suspend fun replaceMedication(
+        medication: MedicationEntity,
+        compositions: List<MedicationSubstanceEntity>,
+        contraindications: List<MedicationContraindicationEntity> = emptyList()
+    ) {
         upsertMedication(medication)
         deleteCompositions(medication.id)
         if (compositions.isNotEmpty()) upsertCompositions(compositions)
+        deleteContraindications(medication.id)
+        if (contraindications.isNotEmpty()) upsertContraindications(contraindications)
     }
 }

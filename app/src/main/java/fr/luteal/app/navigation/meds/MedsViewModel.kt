@@ -65,12 +65,14 @@ class MedsViewModel @Inject constructor(
         val planRows = plans.filter { it.active }.map { plan ->
             MedsPlanRow(plan, names[plan.medicationId] ?: plan.medicationId, nextGroupedIntake(listOf(plan), now)?.at)
         }
-        val history = rows.groupBy { it.medicationId }.map { (medicationId, intakes) ->
+        val at = clock.instant()
+        val recentCutoff = at.minus(Duration.ofHours(24))
+        val recentRows = rows.filter { Instant.ofEpochMilli(it.startAt).isAfter(recentCutoff) }
+        val history = recentRows.groupBy { it.medicationId }.map { (medicationId, intakes) ->
             val last = intakes.maxBy { it.startAt }
-            val at = clock.instant()
             val report = MedicationSafetyChecker.check(
                 CandidateIntake(medicationId, last.units, at),
-                intakes.filter { Instant.ofEpochMilli(it.startAt).isAfter(at.minus(Duration.ofHours(24))) }
+                intakes.filter { Instant.ofEpochMilli(it.startAt).isAfter(recentCutoff) }
                     .map { fr.luteal.core.model.meds.RecordedIntake(it.medicationId, it.units, Instant.ofEpochMilli(it.startAt)) },
                 catalog
             )

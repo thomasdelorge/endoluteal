@@ -42,7 +42,8 @@ data class Medication(
     val form: String,
     val contraindications: String,
     val archived: Boolean,
-    val compositions: List<Composition>
+    val compositions: List<Composition>,
+    val contraindicatedSubstanceIds: List<String> = emptyList()
 )
 
 data class InteractionRule(

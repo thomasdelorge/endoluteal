@@ -1181,6 +1181,16 @@
     <string name="meds_name">Nom</string>
     <string name="meds_form">Forme</string>
     <string name="meds_contraindications">Contre-indications</string>
+    <string name="meds_section_identity">Identité</string>
+    <string name="meds_section_composition">Composition</string>
+    <string name="meds_section_contraindications">Contre-indications</string>
+    <string name="meds_add_contraindicated_substance">Ajouter une substance contre-indiquée</string>
+    <string name="meds_remove_contraindicated">Retirer</string>
+    <string name="meds_alert_contraindication">Substance contre-indiquée avec un autre médicament récent.</string>
+    <string name="meds_severity">Sévérité</string>
+    <string name="meds_severity_warning">Avertissement</string>
+    <string name="meds_severity_danger">Danger</string>
+    <string name="agenda_intake_prefix">💊</string>
     <string name="meds_amount_mg">mg par unité</string>
     <string name="meds_add_composition">Ajouter une substance</string>
     <string name="meds_validated">Valeurs validées</string>

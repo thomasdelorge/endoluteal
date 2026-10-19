@@ -151,6 +151,7 @@ class DataImportManager @Inject constructor(
                         journalEventDao.deleteAllMarks()
                         journalEventDao.deleteAllEvents()
                         medicationDao.deleteAllCompositions()
+                        medicationDao.deleteAllContraindications()
                         medicationDao.deleteAllRules()
                         medicationDao.deleteAllMedications()
                         medicationDao.deleteAllSubstances()
@@ -368,6 +369,12 @@ class DataImportManager @Inject constructor(
                                     medicationId = medication.id,
                                     substanceId = composition.substanceId,
                                     amountMgPerUnit = composition.amountMgPerUnit
+                                )
+                            },
+                            medication.contraindicatedSubstanceIds.map { substanceId ->
+                                fr.luteal.core.data.entity.MedicationContraindicationEntity(
+                                    medication.id,
+                                    substanceId
                                 )
                             }
                         )

@@ -160,6 +160,7 @@ class MedicationCatalogTest {
         )
         val json = exportManager.exportToJsonString()
         database.medicationDao().deleteAllCompositions()
+        database.medicationDao().deleteAllContraindications()
         database.medicationDao().deleteAllRules()
         database.medicationDao().deleteAllMedications()
         database.medicationDao().deleteAllSubstances()

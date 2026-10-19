@@ -332,6 +332,7 @@ private fun alertText(alert: SafetyAlert, ruleMessage: String?): String {
         SafetyAlertType.MIN_INTERVAL_NOT_ELAPSED -> stringResource(R.string.meds_alert_interval)
         SafetyAlertType.CLASS_DUPLICATE -> stringResource(R.string.meds_alert_class)
         SafetyAlertType.INTERACTION_RULE -> ruleMessage ?: stringResource(R.string.meds_alert_rule)
+        SafetyAlertType.CONTRAINDICATED_SUBSTANCE -> stringResource(R.string.meds_alert_contraindication)
     }
     return if (alert.unvalidated) "$base ${stringResource(R.string.meds_alert_unvalidated)}" else base
 }

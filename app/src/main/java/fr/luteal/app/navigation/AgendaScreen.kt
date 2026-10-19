@@ -452,6 +452,7 @@ private fun DayEventTiles(
                     val painAfter = if (after != null) stringResource(R.string.day_tile_pain_after, after) else null
                     TypeSubItem(
                         headline = buildList {
+                            add(stringResource(R.string.agenda_intake_prefix))
                             add(LocalizedDateFormatter.formatTime(event.startAt.atZone(event.zone()).toLocalTime()))
                             if (!intakeLabel.isNullOrBlank()) add(intakeLabel)
                             if (painBefore != null) add(painBefore)

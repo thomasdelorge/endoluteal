@@ -2,6 +2,7 @@ package fr.luteal.core.data.repository
 
 import fr.luteal.core.data.entity.InteractionRuleEntity
 import fr.luteal.core.data.entity.MedicationEntity
+import fr.luteal.core.data.entity.MedicationContraindicationEntity
 import fr.luteal.core.data.entity.MedicationSubstanceEntity
 import fr.luteal.core.data.entity.SubstanceEntity
 import fr.luteal.core.data.local.MedicationDao
@@ -37,16 +38,18 @@ class MedicationRepositoryImpl @Inject constructor(
         medicationDao.observeMedications(),
         medicationDao.observeCompositions(),
         medicationDao.observeSubstances(),
-        medicationDao.observeRules()
-    ) { medications, compositions, substances, rules ->
-        toCatalog(medications, compositions, substances, rules)
+        medicationDao.observeRules(),
+        medicationDao.observeContraindications()
+    ) { medications, compositions, substances, rules, contraindications ->
+        toCatalog(medications, compositions, substances, rules, contraindications)
     }
 
     override suspend fun catalogOnce(): MedicationCatalog = toCatalog(
         medicationDao.medicationsOnce(),
         medicationDao.compositionsOnce(),
         medicationDao.substancesOnce(),
-        medicationDao.rulesOnce()
+        medicationDao.rulesOnce(),
+        medicationDao.contraindicationsOnce()
     )
 
     override suspend fun upsertMedication(medication: Medication) {
@@ -55,7 +58,13 @@ class MedicationRepositoryImpl @Inject constructor(
         medication.compositions.forEach { composition ->
             require(composition.amountMgPerUnit > 0.0) { "Amount per unit must be positive" }
         }
-        medicationDao.replaceMedication(medication.toEntity(), medication.compositions.map { it.toEntity(medication.id) })
+        medicationDao.replaceMedication(
+            medication.toEntity(),
+            medication.compositions.map { it.toEntity(medication.id) },
+            medication.contraindicatedSubstanceIds.map { substanceId ->
+                MedicationContraindicationEntity(medication.id, substanceId)
+            }
+        )
     }
 
     override suspend fun upsertSubstance(substance: Substance) {
@@ -77,7 +86,10 @@ class MedicationRepositoryImpl @Inject constructor(
         catalog.medications.forEach { medication ->
             medicationDao.replaceMedication(
                 medication.toEntity(),
-                medication.compositions.map { it.toEntity(medication.id) }
+                medication.compositions.map { it.toEntity(medication.id) },
+                medication.contraindicatedSubstanceIds.map { substanceId ->
+                    MedicationContraindicationEntity(medication.id, substanceId)
+                }
             )
         }
         catalog.rules.forEach { medicationDao.upsertRule(it.toEntity()) }
@@ -103,7 +115,10 @@ class MedicationRepositoryImpl @Inject constructor(
         catalog.medications.filter { it.id !in medicationIds }.forEach { medication ->
             medicationDao.replaceMedication(
                 medication.toEntity(),
-                medication.compositions.map { it.toEntity(medication.id) }
+                medication.compositions.map { it.toEntity(medication.id) },
+                medication.contraindicatedSubstanceIds.map { substanceId ->
+                    MedicationContraindicationEntity(medication.id, substanceId)
+                }
             )
         }
         val ruleIds = current.rules.map { it.id }.toSet()
@@ -114,13 +129,18 @@ class MedicationRepositoryImpl @Inject constructor(
         medications: List<MedicationEntity>,
         compositions: List<MedicationSubstanceEntity>,
         substances: List<SubstanceEntity>,
-        rules: List<InteractionRuleEntity>
+        rules: List<InteractionRuleEntity>,
+        contraindications: List<MedicationContraindicationEntity>
     ): MedicationCatalog {
         val byMedication = compositions.groupBy { it.medicationId }
+        val contraindicatedByMedication = contraindications.groupBy { it.medicationId }
         return MedicationCatalog(
             substances = substances.map { it.toDomain() },
             medications = medications.map { entity ->
-                entity.toDomain(byMedication[entity.id].orEmpty())
+                entity.toDomain(
+                    byMedication[entity.id].orEmpty(),
+                    contraindicatedByMedication[entity.id].orEmpty().map { it.substanceId }
+                )
             },
             rules = rules.map { it.toDomain() }
         )
@@ -149,13 +169,17 @@ private fun Substance.toEntity() = SubstanceEntity(
     notes = notes.trim()
 )
 
-private fun MedicationEntity.toDomain(rows: List<MedicationSubstanceEntity>) = Medication(
+private fun MedicationEntity.toDomain(
+    rows: List<MedicationSubstanceEntity>,
+    contraindicatedSubstanceIds: List<String>
+) = Medication(
     id = id,
     name = name,
     form = form,
     contraindications = contraindications,
     archived = archived,
-    compositions = rows.map { Composition(it.substanceId, it.amountMgPerUnit) }
+    compositions = rows.map { Composition(it.substanceId, it.amountMgPerUnit) },
+    contraindicatedSubstanceIds = contraindicatedSubstanceIds
 )
 
 private fun Medication.toEntity() = MedicationEntity(

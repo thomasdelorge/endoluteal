@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Médicaments : catalogue en tuiles, sections et menus déroulants ; contre-indications par substance ; prises récentes limitées à 24 h ; prises de l’agenda préfixées par 💊 ; export frise avec nombre de prises par jour et par médicament.
+
 ## [0.11.3] - 2026-10-19
 
 ### Added

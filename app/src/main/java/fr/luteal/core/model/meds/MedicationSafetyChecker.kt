@@ -8,7 +8,8 @@ enum class SafetyAlertType {
     PER_INTAKE_MAX_EXCEEDED,
     MIN_INTERVAL_NOT_ELAPSED,
     CLASS_DUPLICATE,
-    INTERACTION_RULE
+    INTERACTION_RULE,
+    CONTRAINDICATED_SUBSTANCE
 }
 
 data class SafetyAlert(
@@ -101,6 +102,7 @@ object MedicationSafetyChecker {
         }
         alerts += classDuplicates(candidate.at, candidateDoses, historyDoses, substances, catalog.rules)
         alerts += interactionRules(candidateDoses, historyDoses, substances, catalog.rules)
+        alerts += contraindicatedSubstances(candidate, recent, catalog)
         return SafetyReport(
             alerts = alerts,
             nextPossibleIntakeAt = nextPossible(candidate, candidateDoses, historyDoses, substances)
@@ -135,6 +137,34 @@ object MedicationSafetyChecker {
             }
         }
         return alerts
+    }
+
+    private fun contraindicatedSubstances(
+        candidate: CandidateIntake,
+        recent: List<RecordedIntake>,
+        catalog: MedicationCatalog
+    ): List<SafetyAlert> {
+        val medsById = catalog.medications.associateBy { it.id }
+        fun substanceIds(medicationId: String): Set<String> =
+            medsById[medicationId]?.compositions?.map { it.substanceId }?.toSet() ?: emptySet()
+        val candidateMed = medsById[candidate.medicationId] ?: return emptyList()
+        val candidateSubstances = substanceIds(candidate.medicationId)
+        val otherIntakes = recent.filter { it.medicationId != candidate.medicationId }
+        val alerts = mutableListOf<SafetyAlert>()
+        otherIntakes.forEach { other ->
+            val otherMed = medsById[other.medicationId] ?: return@forEach
+            val otherSubstances = substanceIds(other.medicationId)
+            val hit = candidateMed.contraindicatedSubstanceIds.any { it in otherSubstances } ||
+                otherMed.contraindicatedSubstanceIds.any { it in candidateSubstances }
+            if (hit) {
+                alerts += SafetyAlert(
+                    type = SafetyAlertType.CONTRAINDICATED_SUBSTANCE,
+                    severity = AlertSeverity.DANGER,
+                    unvalidated = false
+                )
+            }
+        }
+        return alerts.distinctBy { it.type }
     }
 
     private fun interactionRules(

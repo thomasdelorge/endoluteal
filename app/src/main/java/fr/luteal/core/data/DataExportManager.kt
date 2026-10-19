@@ -195,6 +195,7 @@ class DataExportManager @Inject constructor(
             )
         }
         val compositions = medicationDao.compositionsOnce().groupBy { it.medicationId }
+        val contraindications = medicationDao.contraindicationsOnce().groupBy { it.medicationId }
         val substances = medicationDao.substancesOnce().map { entity ->
             SubstanceBackupDto(
                 id = entity.id,
@@ -216,7 +217,8 @@ class DataExportManager @Inject constructor(
                 archived = entity.archived,
                 compositions = compositions[entity.id].orEmpty().map { row ->
                     CompositionBackupDto(row.substanceId, row.amountMgPerUnit)
-                }
+                },
+                contraindicatedSubstanceIds = contraindications[entity.id].orEmpty().map { it.substanceId }
             )
         }
         val interactionRules = medicationDao.rulesOnce().map { entity ->

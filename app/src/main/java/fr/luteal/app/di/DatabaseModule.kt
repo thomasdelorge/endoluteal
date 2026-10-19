@@ -20,6 +20,7 @@ import fr.luteal.core.data.local.LutealDatabase
 import fr.luteal.core.data.local.MIGRATION_10_11
 import fr.luteal.core.data.local.MIGRATION_11_12
 import fr.luteal.core.data.local.MIGRATION_12_13
+import fr.luteal.core.data.local.MIGRATION_13_14
 import fr.luteal.core.data.local.MedicationDao
 import fr.luteal.core.data.local.MedicationIntakeDao
 import fr.luteal.core.data.local.ReminderDao
@@ -42,7 +43,7 @@ object DatabaseModule {
             LutealDatabase::class.java,
             "endoluteal.db"
         )
-            .addMigrations(MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13)
+            .addMigrations(MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14)
             // Versions below 10 may wipe. 10 starts MIGRATION_10_11, so Room
             // forbids listing it here. From 11, a missing migration fails open.
             .fallbackToDestructiveMigrationFrom(true, 1, 2, 3, 4, 5, 6, 7, 8, 9)

@@ -14,6 +14,7 @@ import fr.luteal.core.data.entity.DailyEntryEntity
 import fr.luteal.core.data.entity.InteractionRuleEntity
 import fr.luteal.core.data.entity.JournalEventEntity
 import fr.luteal.core.data.entity.MedicationEntity
+import fr.luteal.core.data.entity.MedicationContraindicationEntity
 import fr.luteal.core.data.entity.MedicationIntakeEntity
 import fr.luteal.core.data.entity.MedicationSubstanceEntity
 import fr.luteal.core.data.entity.PainMarkEntity
@@ -36,6 +37,7 @@ import fr.luteal.core.data.entity.UserProfileEntity
         SubstanceEntity::class,
         MedicationEntity::class,
         MedicationSubstanceEntity::class,
+        MedicationContraindicationEntity::class,
         InteractionRuleEntity::class,
         MedicationIntakeEntity::class,
         TreatmentPlanEntity::class,
@@ -45,7 +47,7 @@ import fr.luteal.core.data.entity.UserProfileEntity
         DailyRecapEntity::class,
         QuestionnaireResultEntity::class
     ],
-    version = 13,
+    version = 14,
     exportSchema = true
 )
 @TypeConverters(Converters::class)

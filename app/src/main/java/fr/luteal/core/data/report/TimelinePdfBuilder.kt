@@ -55,6 +55,14 @@ object TimelinePdfBuilder {
             if (visit.subtitle.isNotBlank()) line(visit.subtitle, textPaint)
             if (visit.detail.isNotBlank()) line(visit.detail, textPaint)
         }
+        if (content.dailyIntakes.isNotEmpty()) {
+            y += 8f
+            line("Prises de médicaments par jour", headerPaint)
+            val dates = DateTimeFormatter.ofPattern("dd-MM-yyyy")
+            content.dailyIntakes.forEach { row ->
+                line("${row.date.format(dates)} · x${row.count} ${row.name}", textPaint)
+            }
+        }
         content.summary?.let { summary ->
             y += 8f
             line("Depuis le dernier rendez-vous", headerPaint)

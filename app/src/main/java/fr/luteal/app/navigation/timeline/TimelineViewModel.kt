@@ -17,6 +17,8 @@ import fr.luteal.core.model.professional.Appointment
 import fr.luteal.core.model.professional.Professional
 import fr.luteal.core.model.professional.ReportStatus
 import fr.luteal.core.model.professional.Specialty
+import fr.luteal.core.model.report.DailyMedicationIntakeCount
+import fr.luteal.core.model.report.MedicationIntakeDailyAggregator
 import fr.luteal.core.model.report.SinceLastVisitAggregator
 import fr.luteal.core.model.report.SinceLastVisitSummary
 import fr.luteal.core.model.report.TimelineFilter
@@ -47,6 +49,7 @@ data class TimelineUiState(
     val visits: List<TimelineVisit> = emptyList(),
     val professionals: List<Professional> = emptyList(),
     val summary: SinceLastVisitSummary? = null,
+    val dailyIntakes: List<DailyMedicationIntakeCount> = emptyList(),
     val filters: TimelineFilters = TimelineFilters(),
     val selected: TimelineVisit? = null
 )
@@ -96,7 +99,11 @@ class TimelineViewModel @Inject constructor(
 
     fun pdfContent(): TimelinePdfContent {
         val state = uiState.value
-        return TimelinePdfContent(state.visits, state.summary)
+        return TimelinePdfContent(
+            visits = state.visits,
+            summary = state.summary,
+            dailyIntakes = state.dailyIntakes
+        )
     }
 
     private fun buildState(data: TimelineSource, current: TimelineFilters): TimelineUiState {
@@ -115,6 +122,20 @@ class TimelineViewModel @Inject constructor(
             fromInclusive = from,
             toInclusive = if (from == null) null else now
         )
+        val names = data.medications.associate { it.id to it.name }
+        val intakeSamples = data.intakes.map { row ->
+            TimelineIntakeSample(
+                at = Instant.ofEpochMilli(row.startAt),
+                medicationId = row.medicationId,
+                medicationName = names[row.medicationId] ?: row.medicationId
+            )
+        }
+        val dailyIntakes = MedicationIntakeDailyAggregator.aggregate(
+            intakes = intakeSamples,
+            zone = zone,
+            fromInclusive = from,
+            toInclusive = if (from == null) null else now
+        )
         val summary = current.professionalId?.let { professionalId ->
             val last = data.events
                 .filter { it.type == JournalEventType.APPOINTMENT }
@@ -122,7 +143,6 @@ class TimelineViewModel @Inject constructor(
                 .filter { !it.startAt.isAfter(now) }
                 .maxByOrNull { it.startAt }
                 ?: return@let null
-            val names = data.medications.associate { it.id to it.name }
             SinceLastVisitAggregator.summarize(
                 fromInclusive = last.startAt,
                 toInclusive = now,
@@ -151,6 +171,7 @@ class TimelineViewModel @Inject constructor(
             visits = filtered,
             professionals = data.professionals.sortedBy { it.name },
             summary = summary,
+            dailyIntakes = dailyIntakes,
             filters = current,
             selected = filtered.find { it.eventId == current.selectedEventId }
         )

@@ -1,5 +1,6 @@
 package fr.luteal.core.model.meds
 
+import java.time.Duration
 import java.time.Instant
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -212,12 +213,41 @@ class MedicationSafetyCheckerTest {
         interval: Int? = null
     ) = Substance(id, id, drugClass, maxDaily, perIntake, interval, validated = false, notes = "")
 
-    private fun medication(id: String, substanceId: String, mg: Double) = Medication(
+    @Test
+    fun contraindicatedSubstanceAlertsWithinWindow() {
+        val tramadol = substance("tramadol", DrugClass.OPIOID)
+        val paracetamol = substance("paracetamol", DrugClass.PARACETAMOL)
+        val medA = medication("med-a", "paracetamol", 500.0, contraindicated = listOf("tramadol"))
+        val medB = medication("med-b", "tramadol", 50.0)
+        val catalog = catalog(listOf(tramadol, paracetamol), listOf(medA, medB))
+        val at = Instant.parse("2026-06-01T12:00:00Z")
+        val history = listOf(RecordedIntake("med-b", 1.0, at.minus(Duration.ofHours(2))))
+        val report = MedicationSafetyChecker.check(
+            CandidateIntake("med-a", 1.0, at),
+            history,
+            catalog
+        )
+        assertEquals(SafetyAlertType.CONTRAINDICATED_SUBSTANCE, report.alerts.single().type)
+        val outside = MedicationSafetyChecker.check(
+            CandidateIntake("med-a", 1.0, at),
+            emptyList(),
+            catalog
+        )
+        assertTrue(outside.alerts.none { it.type == SafetyAlertType.CONTRAINDICATED_SUBSTANCE })
+    }
+
+    private fun medication(
+        id: String,
+        substanceId: String,
+        mg: Double,
+        contraindicated: List<String> = emptyList()
+    ) = Medication(
         id = id,
         name = id,
         form = "comprimé",
         contraindications = "",
         archived = false,
-        compositions = listOf(Composition(substanceId, mg))
+        compositions = listOf(Composition(substanceId, mg)),
+        contraindicatedSubstanceIds = contraindicated
     )
 }

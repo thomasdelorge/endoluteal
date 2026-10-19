@@ -89,9 +89,22 @@ class RoomSchemaHarnessTest {
         }
     }
 
+    @Test
+    fun migratesMedicationContraindicationsFrom13To14() {
+        helper.createDatabase(MIGRATION_13_DB, 13).close()
+        helper.runMigrationsAndValidate(MIGRATION_13_DB, 14, true, MIGRATION_13_14).use { db ->
+            db.query(
+                "SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'medication_contraindications'"
+            ).use { cursor ->
+                assertTrue(cursor.moveToFirst())
+            }
+        }
+    }
+
     companion object {
         private const val TEST_DB = "endoluteal-schema-harness-test.db"
         private const val MIGRATION_DB = "endoluteal-migration-11-12.db"
         private const val MIGRATION_12_DB = "endoluteal-migration-12-13.db"
+        private const val MIGRATION_13_DB = "endoluteal-migration-13-14.db"
     }
 }

@@ -144,7 +144,8 @@ data class MedicationBackupDto(
     @SerialName("form") val form: String = "",
     @SerialName("contraindications") val contraindications: String = "",
     @SerialName("archived") val archived: Boolean = false,
-    @SerialName("compositions") val compositions: List<CompositionBackupDto> = emptyList()
+    @SerialName("compositions") val compositions: List<CompositionBackupDto> = emptyList(),
+    @SerialName("contraindicated_substance_ids") val contraindicatedSubstanceIds: List<String> = emptyList()
 )
 
 @Serializable

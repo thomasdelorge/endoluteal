@@ -61,3 +61,25 @@ val MIGRATION_12_13 = object : Migration(12, 13) {
         db.execSQL("ALTER TABLE appointments ADD COLUMN locationEdited INTEGER NOT NULL DEFAULT 0")
     }
 }
+
+val MIGRATION_13_14 = object : Migration(13, 14) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            """
+            CREATE TABLE IF NOT EXISTS `medication_contraindications` (
+                `medicationId` TEXT NOT NULL,
+                `substanceId` TEXT NOT NULL,
+                PRIMARY KEY(`medicationId`, `substanceId`),
+                FOREIGN KEY(`medicationId`) REFERENCES `medications`(`id`)
+                    ON UPDATE NO ACTION ON DELETE CASCADE,
+                FOREIGN KEY(`substanceId`) REFERENCES `substances`(`id`)
+                    ON UPDATE NO ACTION ON DELETE CASCADE
+            )
+            """.trimIndent()
+        )
+        db.execSQL(
+            "CREATE INDEX IF NOT EXISTS `index_medication_contraindications_substanceId` " +
+                "ON `medication_contraindications` (`substanceId`)"
+        )
+    }
+}
