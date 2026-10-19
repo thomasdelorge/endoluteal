@@ -4,6 +4,11 @@ Application Android de suivi de l'endométriose (hard-fork de
 [Luteal](https://github.com/JoeriKaiser/luteal)). Roadmap et issues :
 [docs/product/ENDOLUTEAL_ROADMAP.md](docs/product/ENDOLUTEAL_ROADMAP.md).
 
+## Architecture
+
+- Carte des douleurs (pins, CHOIR, récap vs journal) :
+  [docs/architecture/PAIN_BODY_MAP.md](docs/architecture/PAIN_BODY_MAP.md).
+
 ## Stack
 
 - Module unique `:app`, Kotlin, Jetpack Compose, Hilt, ViewModel + `StateFlow`

@@ -9,6 +9,10 @@ import fr.luteal.core.model.recap.RecapGeneralPayload
 import fr.luteal.core.model.recap.RecapPainPayload
 import fr.luteal.core.model.recap.RecapPsyPayload
 import fr.luteal.core.model.recap.RecapStep
+import fr.luteal.core.model.recap.withPinsOnly
+import fr.luteal.core.designsystem.component.bodymap.ChoirPainMap
+import android.content.Context
+import dagger.hilt.android.qualifiers.ApplicationContext
 import java.time.Clock
 import java.time.Instant
 import java.time.LocalDate
@@ -33,9 +37,11 @@ interface DailyRecapRepository {
 @Singleton
 class DailyRecapRepositoryImpl @Inject constructor(
     private val dailyRecapDao: DailyRecapDao,
-    private val clock: Clock
+    private val clock: Clock,
+    @ApplicationContext private val context: Context
 ) : DailyRecapRepository {
     private val json = Json { ignoreUnknownKeys = true; encodeDefaults = true }
+    private val zonePinSeeds by lazy { ChoirPainMap.zonePinSeeds(context) }
 
     override fun observe(date: LocalDate): Flow<DailyRecap?> =
         dailyRecapDao.observe(date.toString()).map { entity -> entity?.toModel() }
@@ -70,7 +76,7 @@ class DailyRecapRepositoryImpl @Inject constructor(
     private fun DailyRecapEntity.toModel(): DailyRecap = DailyRecap(
         date = LocalDate.parse(date),
         cycle = json.decodeFromString(cycleJson),
-        pain = json.decodeFromString(painJson),
+        pain = json.decodeFromString<RecapPainPayload>(painJson).withPinsOnly(zonePinSeeds),
         psy = json.decodeFromString(psyJson),
         general = json.decodeFromString(generalJson),
         bowel = json.decodeFromString(bowelJson),

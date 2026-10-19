@@ -115,7 +115,7 @@ flowchart LR
 - Données : départ de zéro, schéma v1.
 - Accueil : Agenda ; Aujourd'hui est supprimé.
 - Langue : FR uniquement.
-- BodyMap : zones anatomiques prédéfinies, pas de pins libres.
+- BodyMap : pins sur silhouette CHOIR (plusieurs par zone), clé de zone pour l’agrégation ; voir [PAIN_BODY_MAP.md](../architecture/PAIN_BODY_MAP.md).
 - Base médicaments : pré-remplissage optionnel des antalgiques courants, doses à valider, avertissement permanent.
 - TENS généralisé en traitement non médicamenteux.
 - 5D de l'endométriose dans le récap, dyspareunie masquable.
@@ -486,7 +486,7 @@ Commandes communes.
 > milestone: M2 Socle agenda | labels: type:feat,area:ui,size:S,agent-ready
 
 **Contexte**
-Localisation et type de douleur sont communs à toutes les saisies. Des zones prédéfinies (plutôt que des pins libres) permettent d'agréger pour la heatmap et les rapports.
+Localisation et type de douleur sont communs à toutes les saisies. Clés de zone CHOIR stables + coordonnées de pin pour la heatmap ; voir [PAIN_BODY_MAP.md](../architecture/PAIN_BODY_MAP.md).
 
 **Objectif**
 - Enum `BodyZone` (id stable, face `FRONT` / `BACK` / `INTERNAL`, libellé) :
@@ -543,11 +543,11 @@ Commandes communes, puis test manuel avec TalkBack activé sur l'émulateur.
 > milestone: M2 Socle agenda | labels: type:feat,area:ui,size:L,agent-ready
 
 **Contexte**
-La localisation des douleurs se fait sur une silhouette, face avant et arrière, avec une intensité par zone. Le même composant affiche en lecture seule une heatmap agrégée (récap, état des lieux).
+La localisation des douleurs se fait sur la silhouette CHOIR (face avant et arrière) par **points** (`PainMark` avec coords). Le même composant peut afficher en lecture seule une heatmap agrégée. Détails : [PAIN_BODY_MAP.md](../architecture/PAIN_BODY_MAP.md).
 
 **Objectif**
-- Silhouette dessinée en Compose `Canvas`, un `Path` par `BodyZone` (`FRONT` et `BACK`), bascule recto/verso.
-- Mode édition : un tap sur une zone ouvre une feuille avec `PainScale` et puces `PainType` ; la zone se colore selon l'intensité. Un nouveau tap permet de modifier ou retirer.
+- Silhouette CHOIR, bascule recto/verso.
+- Mode édition : tap sur la silhouette place un pin ; tap sur un pin ouvre la feuille (`PainScale`, `PainType`). Plusieurs pins par zone CHOIR.
 - Zones `INTERNAL` saisies par puces sous la silhouette.
 - Mode lecture : `BodyMap(heat: Map<BodyZone, Int>)` colore chaque zone.
 - Sortie : `List<PainMark>` (zone, intensité, types).

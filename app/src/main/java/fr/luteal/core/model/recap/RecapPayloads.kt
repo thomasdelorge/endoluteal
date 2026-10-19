@@ -20,7 +20,19 @@ data class RecapZoneRange(
 )
 
 @Serializable
+data class RecapPainMark(
+    val id: String,
+    val zone: String,
+    val intensity: Int,
+    val painTypes: List<String> = emptyList(),
+    val pinSide: String? = null,
+    val pinX: Float? = null,
+    val pinY: Float? = null
+)
+
+@Serializable
 data class RecapPainPayload(
+    val marks: List<RecapPainMark> = emptyList(),
     val zoneRanges: List<RecapZoneRange> = emptyList(),
     val dysmenorrhea: Int? = null,
     val dyspareunia: Int? = null,

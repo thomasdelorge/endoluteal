@@ -30,7 +30,7 @@ class DailyRecapRepositoryTest {
         database = Room.inMemoryDatabaseBuilder(context, LutealDatabase::class.java)
             .allowMainThreadQueries()
             .build()
-        repository = DailyRecapRepositoryImpl(database.dailyRecapDao(), clock)
+        repository = DailyRecapRepositoryImpl(database.dailyRecapDao(), clock, context)
     }
 
     @After

@@ -2,6 +2,7 @@ package fr.luteal.core.designsystem.component.bodymap
 
 import android.content.Context
 import androidx.compose.ui.geometry.Offset
+import fr.luteal.core.model.recap.ZonePinSeed
 
 /**
  * CHOIR Bodymap, female, Stanford University.
@@ -41,6 +42,26 @@ object ChoirPainMap {
         regions.lastOrNull { region ->
             region.front == front && contains(x, y, region.points)
         }
+
+    fun zonePinSeeds(context: Context): Map<String, ZonePinSeed> {
+        val half = IMAGE_WIDTH / 2f
+        return regions(context).associate { region ->
+            val cx = region.points.map { it.x }.average().toFloat()
+            val cy = region.points.map { it.y }.average().toFloat()
+            val side = if (region.front) {
+                PainPinGeometry.PIN_SIDE_FRONT
+            } else {
+                PainPinGeometry.PIN_SIDE_BACK
+            }
+            val nx = if (region.front) cx / half else (cx - half) / half
+            val ny = cy / IMAGE_HEIGHT
+            region.key to ZonePinSeed(
+                pinSide = side,
+                pinX = nx.coerceIn(0f, 1f),
+                pinY = ny.coerceIn(0f, 1f)
+            )
+        }
+    }
 
     private fun contains(x: Float, y: Float, points: List<Offset>): Boolean {
         var inside = false

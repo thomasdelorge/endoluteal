@@ -28,7 +28,7 @@ fun PainStep(
     active: Boolean = true,
     onBindSave: (() -> Unit) -> Unit = {}
 ) {
-    var ranges by remember(initial) { mutableStateOf(initial.zoneRanges) }
+    var marks by remember(initial) { mutableStateOf(initial.marks) }
     var dysmenorrhea by remember(initial) { mutableStateOf(initial.dysmenorrhea) }
     var dyspareunia by remember(initial) { mutableStateOf(initial.dyspareunia) }
     var dyschezia by remember(initial) { mutableStateOf(initial.dyschezia) }
@@ -36,12 +36,12 @@ fun PainStep(
     var chronic by remember(initial) { mutableStateOf(initial.chronicPelvicPain) }
     var notes by remember(initial) { mutableStateOf(initial.notes) }
 
-    LaunchedEffect(ranges, dysmenorrhea, dyspareunia, dyschezia, dysuria, chronic, notes, hideDyspareunia, active) {
+    LaunchedEffect(marks, dysmenorrhea, dyspareunia, dyschezia, dysuria, chronic, notes, hideDyspareunia, active) {
         if (!active) return@LaunchedEffect
         onBindSave {
             onContinue(
                 RecapPainPayload(
-                    zoneRanges = ranges,
+                    marks = marks,
                     dysmenorrhea = dysmenorrhea,
                     dyspareunia = if (hideDyspareunia) null else dyspareunia,
                     dyschezia = dyschezia,
@@ -61,7 +61,7 @@ fun PainStep(
                 Text(line, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
-        BodyMapDayRanges(ranges = ranges, onChange = { ranges = it })
+        BodyMapPainMarks(marks = marks, onChange = { marks = it })
         FiveDField(
             stringResource(R.string.recap_5d_dysmenorrhea),
             stringResource(R.string.recap_5d_dysmenorrhea_help),
