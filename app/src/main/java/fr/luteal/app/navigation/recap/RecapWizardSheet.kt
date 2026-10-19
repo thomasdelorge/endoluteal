@@ -11,9 +11,12 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.layout.Box
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.ui.Alignment
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -57,13 +60,18 @@ fun RecapWizardSheet(
     val hideDyspareunia by viewModel.hideDyspareunia.collectAsStateWithLifecycle()
     val hideLibido by viewModel.hideLibido.collectAsStateWithLifecycle()
     val steps = RecapStep.ordered
-    val pagerState = rememberPagerState(
-        initialPage = viewModel.initialPageIndex(),
-        pageCount = { steps.size }
-    )
+    val pagerState = rememberPagerState(pageCount = { steps.size })
     val scope = rememberCoroutineScope()
     var saveCurrentStep by remember { mutableStateOf<(() -> Unit)?>(null) }
     val activePage = pagerState.settledPage
+
+    LaunchedEffect(recap?.date) {
+        val loaded = recap ?: return@LaunchedEffect
+        val target = steps.indexOf(loaded.firstIncompleteStep()).coerceAtLeast(0)
+        if (pagerState.currentPage != target) {
+            pagerState.scrollToPage(target)
+        }
+    }
 
     LaunchedEffect(activePage) {
         saveCurrentStep = null
@@ -96,6 +104,14 @@ fun RecapWizardSheet(
             val progress = (recap?.completedSteps?.size ?: 0).toFloat() / steps.size
             LinearProgressIndicator(progress = { progress }, modifier = Modifier.fillMaxWidth())
             val currentRecap = recap
+            if (currentRecap == null) {
+                Box(
+                    modifier = Modifier.weight(1f).fillMaxWidth(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator()
+                }
+            } else {
             HorizontalPager(
                 state = pagerState,
                 modifier = Modifier.weight(1f),
@@ -112,7 +128,7 @@ fun RecapWizardSheet(
                     when (step) {
                         RecapStep.CYCLE -> CycleStep(
                             ui = cycleUi,
-                            initial = currentRecap?.cycle ?: RecapCyclePayload(),
+                            initial = currentRecap.cycle,
                             active = stepActive,
                             onBindSave = { saveCurrentStep = it },
                             onContinue = { payload ->
@@ -122,7 +138,7 @@ fun RecapWizardSheet(
                         RecapStep.PAIN -> PainStep(
                             dayEventLines = dayEvents,
                             hideDyspareunia = hideDyspareunia,
-                            initial = currentRecap?.pain ?: RecapPainPayload(),
+                            initial = currentRecap.pain,
                             active = stepActive,
                             onBindSave = { saveCurrentStep = it },
                             onContinue = { payload ->
@@ -131,7 +147,7 @@ fun RecapWizardSheet(
                         )
                         RecapStep.PSY -> PsyStep(
                             hideLibido = hideLibido,
-                            initial = currentRecap?.psy ?: RecapPsyPayload(),
+                            initial = currentRecap.psy,
                             active = stepActive,
                             onBindSave = { saveCurrentStep = it },
                             onContinue = { payload ->
@@ -139,7 +155,7 @@ fun RecapWizardSheet(
                             }
                         )
                         RecapStep.GENERAL -> GeneralStep(
-                            initial = currentRecap?.general ?: RecapGeneralPayload(),
+                            initial = currentRecap.general,
                             active = stepActive,
                             onBindSave = { saveCurrentStep = it },
                             onContinue = { payload ->
@@ -147,7 +163,7 @@ fun RecapWizardSheet(
                             }
                         )
                         RecapStep.BOWEL -> BowelStep(
-                            initial = currentRecap?.bowel ?: RecapBowelPayload(),
+                            initial = currentRecap.bowel,
                             active = stepActive,
                             onBindSave = { saveCurrentStep = it },
                             onContinue = { payload ->
@@ -157,12 +173,13 @@ fun RecapWizardSheet(
                     }
                 }
             }
+            }
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
             ) {
-                if (pagerState.currentPage > 0) {
+                if (currentRecap != null && pagerState.currentPage > 0) {
                     TextButton(
                         onClick = {
                             scope.launch {
@@ -176,7 +193,7 @@ fun RecapWizardSheet(
                 }
                 TextButton(
                     onClick = { saveCurrentStep?.invoke() },
-                    enabled = saveCurrentStep != null,
+                    enabled = currentRecap != null && saveCurrentStep != null,
                     modifier = Modifier.testTag("recap_continue")
                 ) { Text(stringResource(R.string.recap_continue)) }
             }

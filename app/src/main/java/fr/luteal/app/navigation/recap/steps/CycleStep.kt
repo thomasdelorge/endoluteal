@@ -12,7 +12,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -36,12 +36,18 @@ fun CycleStep(
     onBindSave: (() -> Unit) -> Unit = {}
 ) {
     val estimated = ui?.estimatedPhase
-    var phaseOverride by rememberSaveable { mutableStateOf(initial.phaseOverride.ifBlank { estimated?.name ?: "" }) }
-    var acceptEstimate by rememberSaveable { mutableStateOf(initial.acceptEstimatedPhase) }
-    var hasBleeding by rememberSaveable { mutableStateOf(initial.hasBleeding) }
-    var bleeding by rememberSaveable { mutableStateOf(initial.bleedingIntensity.ifBlank { BleedingIntensity.LIGHT.name }) }
-    var hasMucus by rememberSaveable { mutableStateOf(initial.hasCervicalMucus) }
-    var mucus by rememberSaveable { mutableStateOf(initial.mucusTexture.ifBlank { CervicalMucusTexture.STICKY.name }) }
+    var phaseOverride by remember(initial) {
+        mutableStateOf(initial.phaseOverride.ifBlank { estimated?.name ?: "" })
+    }
+    var acceptEstimate by remember(initial) { mutableStateOf(initial.acceptEstimatedPhase) }
+    var hasBleeding by remember(initial) { mutableStateOf(initial.hasBleeding) }
+    var bleeding by remember(initial) {
+        mutableStateOf(initial.bleedingIntensity.ifBlank { BleedingIntensity.LIGHT.name })
+    }
+    var hasMucus by remember(initial) { mutableStateOf(initial.hasCervicalMucus) }
+    var mucus by remember(initial) {
+        mutableStateOf(initial.mucusTexture.ifBlank { CervicalMucusTexture.STICKY.name })
+    }
 
     LaunchedEffect(
         phaseOverride,
@@ -54,16 +60,7 @@ fun CycleStep(
     ) {
         if (!active) return@LaunchedEffect
         onBindSave {
-            onContinue(
-                RecapCyclePayload(
-                    phaseOverride = if (acceptEstimate) "" else phaseOverride,
-                    acceptEstimatedPhase = acceptEstimate,
-                    hasBleeding = hasBleeding,
-                    bleedingIntensity = if (hasBleeding) bleeding else "",
-                    hasCervicalMucus = hasMucus,
-                    mucusTexture = if (hasMucus) mucus else ""
-                )
-            )
+            onContinue(buildRecapCyclePayload(phaseOverride, acceptEstimate, hasBleeding, bleeding, hasMucus, mucus))
         }
     }
 
@@ -133,6 +130,22 @@ fun CycleStep(
         }
     }
 }
+
+internal fun buildRecapCyclePayload(
+    phaseOverride: String,
+    acceptEstimate: Boolean,
+    hasBleeding: Boolean,
+    bleeding: String,
+    hasMucus: Boolean,
+    mucus: String
+): RecapCyclePayload = RecapCyclePayload(
+    phaseOverride = if (acceptEstimate) "" else phaseOverride,
+    acceptEstimatedPhase = acceptEstimate,
+    hasBleeding = hasBleeding,
+    bleedingIntensity = if (hasBleeding) bleeding else "",
+    hasCervicalMucus = hasMucus,
+    mucusTexture = if (hasMucus) mucus else ""
+)
 
 @Composable
 private fun phaseLabel(phase: CyclePhase): String = when (phase) {
