@@ -202,5 +202,7 @@ class MainActivity : FragmentActivity() {
         const val ACTION_IMPORT_BACKUP = "fr.luteal.app.action.IMPORT_BACKUP"
         const val EXTRA_IMPORT_JSON = "fr.luteal.app.extra.IMPORT_JSON"
         const val EXTRA_IMPORT_JSON_BASE64 = "fr.luteal.app.extra.IMPORT_JSON_BASE64"
+        /** Device-local path (e.g. /data/local/tmp/…) set by adb push; avoids shell arg size limits. */
+        const val EXTRA_IMPORT_JSON_PATH = "fr.luteal.app.extra.IMPORT_JSON_PATH"
     }
 }

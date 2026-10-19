@@ -25,7 +25,7 @@ ADB          ?= adb
 DEVICE       ?=
 ANCHOR_DATE  ?= $(shell date -u +%F)
 
-.PHONY: help dev dev-install avd emu run logcat release-seed release-build release-check bump test lint clean
+.PHONY: help dev dev-install avd emu run logcat demo-backup dev-seed release-seed release-build release-check bump test lint clean
 
 help:
 	@echo "Endoluteal Build & Release Targets:"
@@ -35,7 +35,9 @@ help:
 	@echo "  make emu             - Start emulator $(AVD)"
 	@echo "  make run             - installDebug and launch on device/emulator"
 	@echo "  make logcat          - Logcat filtered to running app process"
-	@echo "  make release-seed    - Generate demo backup and open release import preview"
+	@echo "  make demo-backup     - Write build/demo-data/endoluteal-demo-backup.json"
+	@echo "  make dev-seed        - Demo backup + open import on debug app ($(APP_ID_DEV))"
+	@echo "  make release-seed    - Demo backup + open import on release app ($(APP_ID))"
 	@echo "  make release-build   - Build signed release APK -> $(RELEASE_APK)"
 	@echo "  make release-check   - Verify signature and Git metadata of $(RELEASE_APK)"
 	@echo "  make bump VERSION=1.x.y CODE=n - Update versionName and versionCode in build.gradle.kts"
@@ -78,6 +80,14 @@ logcat:
 		exit 1; \
 	fi; \
 	$(ADB) logcat --pid=$$pid
+
+demo-backup:
+	@ANCHOR_DATE="$(ANCHOR_DATE)" ./gradlew :app:testDebugUnitTest \
+		--tests fr.luteal.demo.DemoBackupExportTest -q
+	@echo "==> $(CURDIR)/build/demo-data/endoluteal-demo-backup.json"
+
+dev-seed:
+	@bash ./scripts/seed-release.sh "$(ADB)" "$(DEVICE)" "$(APP_ID_DEV)" "$(ANCHOR_DATE)"
 
 release-seed:
 	@bash ./scripts/seed-release.sh "$(ADB)" "$(DEVICE)" "$(APP_ID)" "$(ANCHOR_DATE)"

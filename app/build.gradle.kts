@@ -180,6 +180,10 @@ ksp {
 // -Pfolicular.conformance=/abs/path to test against an upstream working copy.
 tasks.withType<Test> {
     systemProperty(
+        "demo.backup.dir",
+        rootProject.layout.buildDirectory.dir("demo-data").get().asFile.absolutePath
+    )
+    systemProperty(
         "folicular.conformance",
         providers.gradleProperty("folicular.conformance")
             .getOrElse("$rootDir/contract/conformance")
