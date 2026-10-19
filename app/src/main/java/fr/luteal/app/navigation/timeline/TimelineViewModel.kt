@@ -14,7 +14,6 @@ import fr.luteal.core.model.JournalEventType
 import fr.luteal.core.model.meds.Medication
 import fr.luteal.core.model.professional.Appointment
 import fr.luteal.core.model.professional.Professional
-import fr.luteal.core.model.professional.Specialty
 import fr.luteal.core.model.report.SinceLastVisitAggregator
 import fr.luteal.core.model.report.SinceLastVisitSummary
 import fr.luteal.core.model.report.TimelineFilter
@@ -37,8 +36,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 
 data class TimelineFilters(
-    val professionalId: String? = null,
-    val specialties: Set<Specialty> = emptySet(),
+    val professionalIds: Set<String> = emptySet(),
     val kinds: Set<TimelineVisitKind> = TimelineVisitKind.FILTERABLE_ALL,
     val showDetails: Boolean = true,
     val periodDays: Int? = null,
@@ -79,31 +77,16 @@ class TimelineViewModel @Inject constructor(
         buildState(data, current)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), TimelineUiState())
 
-    fun setProfessional(id: String?) {
-        filters.value = filters.value.copy(professionalId = id, selectedEventId = null)
-    }
-
-    fun toggleSpecialty(specialty: Specialty) {
-        val current = filters.value.specialties
-        val next = if (specialty in current) current - specialty else current + specialty
-        filters.value = filters.value.copy(specialties = next, selectedEventId = null)
+    fun toggleProfessional(id: String) {
+        val current = filters.value.professionalIds
+        val next = if (id in current) current - id else current + id
+        filters.value = filters.value.copy(professionalIds = next, selectedEventId = null)
     }
 
     fun toggleKind(kind: TimelineVisitKind) {
         val current = filters.value.kinds
         val next = if (kind in current) current - kind else current + kind
         filters.value = filters.value.copy(kinds = next, selectedEventId = null)
-    }
-
-    fun selectAllKinds() {
-        filters.value = filters.value.copy(
-            kinds = TimelineVisitKind.FILTERABLE_ALL,
-            selectedEventId = null
-        )
-    }
-
-    fun selectNoKinds() {
-        filters.value = filters.value.copy(kinds = emptySet(), selectedEventId = null)
     }
 
     fun setShowDetails(enabled: Boolean) {
@@ -125,8 +108,7 @@ class TimelineViewModel @Inject constructor(
         return buildTimelinePdfContent(
             visits = state.allVisits,
             kinds = state.filters.kinds,
-            professionalId = state.filters.professionalId,
-            specialties = state.filters.specialties,
+            professionalIds = state.filters.professionalIds,
             fromInclusive = from,
             toInclusive = if (from == null) null else now,
             summary = state.summary,
@@ -155,13 +137,12 @@ class TimelineViewModel @Inject constructor(
         val filtered = TimelineFilter.apply(
             visits = visits,
             kinds = current.kinds,
-            professionalId = current.professionalId,
-            specialties = current.specialties,
+            professionalIds = current.professionalIds,
             fromInclusive = from,
             toInclusive = if (from == null) null else now
         )
         val names = data.medications.associate { it.id to it.name }
-        val summary = current.professionalId?.let { professionalId ->
+        val summary = current.professionalIds.singleOrNull()?.let { professionalId ->
             val last = data.events
                 .filter { it.type == JournalEventType.APPOINTMENT }
                 .filter { appointmentsByEvent[it.id]?.professionalId == professionalId }

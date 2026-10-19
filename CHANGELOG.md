@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Plans récurrents (réglages) : liste en tuiles, édition au clic, suppression en édition, boutons à la place des liens.
 - Catalogues Réglages (annuaire, médicaments, substances, plans, TENS) : « + » en tête, édition plein écran, barre bas supprimer / valider ; spécialité médecin en menu déroulant ; doc `docs/architecture/SETTINGS_CATALOG_UX.md`.
 - Frise : filtres par type d’événement (tout / aucun / multi), mode avec ou sans détails ; prises, symptômes, soins/TENS et hospitalisations dans la liste.
+- Frise : types et professionnels en menus multi-sélection uniquement ; filtre par spécialité retiré.
 
 ## [0.11.3] - 2026-10-19
 

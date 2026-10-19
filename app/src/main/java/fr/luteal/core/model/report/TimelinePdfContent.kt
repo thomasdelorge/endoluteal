@@ -1,6 +1,5 @@
 package fr.luteal.core.model.report
 
-import fr.luteal.core.model.professional.Specialty
 import java.time.Instant
 
 data class TimelinePdfContent(
@@ -12,8 +11,7 @@ data class TimelinePdfContent(
 fun buildTimelinePdfContent(
     visits: List<TimelineVisit>,
     kinds: Set<TimelineVisitKind>,
-    professionalId: String?,
-    specialties: Set<Specialty>,
+    professionalIds: Set<String>,
     fromInclusive: Instant?,
     toInclusive: Instant?,
     summary: SinceLastVisitSummary?,
@@ -22,11 +20,10 @@ fun buildTimelinePdfContent(
     visits = TimelineFilter.apply(
         visits = visits,
         kinds = kinds,
-        professionalId = professionalId,
-        specialties = specialties,
+        professionalIds = professionalIds,
         fromInclusive = fromInclusive,
         toInclusive = toInclusive
     ),
-    summary = if (professionalId == null) null else summary,
+    summary = if (professionalIds.size == 1) summary else null,
     showDetails = showDetails
 )

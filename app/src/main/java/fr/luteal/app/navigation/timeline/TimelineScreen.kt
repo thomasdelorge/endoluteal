@@ -33,7 +33,6 @@ import fr.luteal.core.designsystem.component.LutealCard
 import fr.luteal.core.designsystem.component.LutealPrimaryButton
 import fr.luteal.core.designsystem.component.SettingsMultiSelectDropdown
 import fr.luteal.core.designsystem.theme.LutealSpacing
-import fr.luteal.core.model.professional.Specialty
 import fr.luteal.core.model.report.SinceLastVisitSummary
 import fr.luteal.core.model.report.TimelineVisit
 import fr.luteal.core.model.report.TimelineVisitKind
@@ -130,28 +129,14 @@ fun TimelineScreen(
                     .map { resources.timelineKindLabel(it) }
                     .joinToString()
             }
-            Text(stringResource(R.string.timeline_filter_kind), style = MaterialTheme.typography.labelLarge)
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(LutealSpacing.xs)) {
-                FilterChip(
-                    selected = state.filters.kinds == TimelineVisitKind.FILTERABLE_ALL,
-                    onClick = { viewModel.selectAllKinds() },
-                    label = { Text(allKindsLabel) }
-                )
-                FilterChip(
-                    selected = state.filters.kinds.isEmpty(),
-                    onClick = { viewModel.selectNoKinds() },
-                    label = { Text(noneKindsLabel) }
-                )
-            }
             SettingsMultiSelectDropdown(
-                label = "",
+                label = stringResource(R.string.timeline_filter_kind),
                 options = TimelineVisitKind.entries,
                 selected = state.filters.kinds,
                 optionLabel = { resources.timelineKindLabel(it) },
                 onToggle = viewModel::toggleKind,
                 emptySummary = noneKindsLabel,
-                summaryText = kindsSummary.takeIf { state.filters.kinds.isNotEmpty() },
-                modifier = Modifier.padding(top = LutealSpacing.xs)
+                summaryText = kindsSummary.takeIf { state.filters.kinds.isNotEmpty() }
             )
         }
         item {
@@ -168,30 +153,23 @@ fun TimelineScreen(
             }
         }
         item {
-            Text(stringResource(R.string.timeline_filter_professional), style = MaterialTheme.typography.labelLarge)
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(LutealSpacing.xs)) {
-                FilterChip(
-                    selected = state.filters.professionalId == null,
-                    onClick = { viewModel.setProfessional(null) },
-                    label = { Text(stringResource(R.string.timeline_filter_all)) }
-                )
-                state.professionals.forEach { professional ->
-                    FilterChip(
-                        selected = state.filters.professionalId == professional.id,
-                        onClick = { viewModel.setProfessional(professional.id) },
-                        label = { Text(professional.name) }
-                    )
-                }
+            val proNames = state.professionals.associate { it.id to it.name }
+            val allProsLabel = stringResource(R.string.timeline_filter_all)
+            val proSummary = when {
+                state.filters.professionalIds.isEmpty() -> allProsLabel
+                else -> state.filters.professionalIds
+                    .mapNotNull { proNames[it] }
+                    .sorted()
+                    .joinToString()
             }
-        }
-        item {
             SettingsMultiSelectDropdown(
-                label = stringResource(R.string.timeline_filter_specialty),
-                options = Specialty.entries,
-                selected = state.filters.specialties,
-                optionLabel = { it.label },
-                onToggle = viewModel::toggleSpecialty,
-                emptySummary = stringResource(R.string.timeline_filter_all)
+                label = stringResource(R.string.timeline_filter_professional),
+                options = state.professionals.map { it.id },
+                selected = state.filters.professionalIds,
+                optionLabel = { proNames[it] ?: it },
+                onToggle = viewModel::toggleProfessional,
+                emptySummary = allProsLabel,
+                summaryText = proSummary.takeIf { state.filters.professionalIds.isNotEmpty() }
             )
         }
         item {
