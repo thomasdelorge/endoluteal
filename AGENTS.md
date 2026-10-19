@@ -8,6 +8,8 @@ Application Android de suivi de l'endométriose (hard-fork de
 
 - Carte des douleurs (pins, CHOIR, récap vs journal) :
   [docs/architecture/PAIN_BODY_MAP.md](docs/architecture/PAIN_BODY_MAP.md).
+- Catalogues Réglages (tuiles, `+`, édition, footer) :
+  [docs/architecture/SETTINGS_CATALOG_UX.md](docs/architecture/SETTINGS_CATALOG_UX.md).
 
 ## Stack
 

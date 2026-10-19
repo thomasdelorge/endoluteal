@@ -2,7 +2,6 @@ package fr.luteal.app.navigation.timeline
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
@@ -12,12 +11,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Checkbox
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -36,6 +31,7 @@ import fr.luteal.app.R
 import fr.luteal.app.navigation.ScreenHeader
 import fr.luteal.core.designsystem.component.LutealCard
 import fr.luteal.core.designsystem.component.LutealPrimaryButton
+import fr.luteal.core.designsystem.component.SettingsMultiSelectDropdown
 import fr.luteal.core.designsystem.theme.LutealSpacing
 import fr.luteal.core.model.professional.Specialty
 import fr.luteal.core.model.report.SinceLastVisitSummary
@@ -131,40 +127,14 @@ fun TimelineScreen(
             }
         }
         item {
-            Text(stringResource(R.string.timeline_filter_specialty), style = MaterialTheme.typography.labelLarge)
-            var menuOpen by remember { mutableStateOf(false) }
-            val selected = state.filters.specialties
-            Box(modifier = Modifier.fillMaxWidth()) {
-                OutlinedButton(
-                    onClick = { menuOpen = true },
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text(
-                        if (selected.isEmpty()) {
-                            stringResource(R.string.timeline_filter_all)
-                        } else {
-                            selected.joinToString { it.label }
-                        }
-                    )
-                }
-                DropdownMenu(
-                    expanded = menuOpen,
-                    onDismissRequest = { menuOpen = false }
-                ) {
-                    Specialty.entries.forEach { specialty ->
-                        DropdownMenuItem(
-                            text = { Text(specialty.label) },
-                            leadingIcon = {
-                                Checkbox(
-                                    checked = specialty in selected,
-                                    onCheckedChange = null
-                                )
-                            },
-                            onClick = { viewModel.toggleSpecialty(specialty) }
-                        )
-                    }
-                }
-            }
+            SettingsMultiSelectDropdown(
+                label = stringResource(R.string.timeline_filter_specialty),
+                options = Specialty.entries,
+                selected = state.filters.specialties,
+                optionLabel = { it.label },
+                onToggle = viewModel::toggleSpecialty,
+                emptySummary = stringResource(R.string.timeline_filter_all)
+            )
         }
         item {
             Text(stringResource(R.string.timeline_filter_period), style = MaterialTheme.typography.labelLarge)

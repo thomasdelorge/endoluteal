@@ -9,11 +9,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -30,12 +26,13 @@ import androidx.compose.ui.res.stringResource
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import fr.luteal.app.R
-import fr.luteal.core.designsystem.component.FormSaveButton
+import fr.luteal.core.designsystem.component.FormEditorFooter
 import fr.luteal.core.designsystem.component.LutealCard
 import fr.luteal.core.designsystem.component.LutealPrimaryButton
 import fr.luteal.core.designsystem.component.LutealSecondaryButton
 import fr.luteal.core.designsystem.component.ScreenBack
 import fr.luteal.core.designsystem.component.SettingsDropdownField
+import fr.luteal.core.designsystem.component.SettingsListHeader
 import fr.luteal.core.designsystem.theme.LutealSpacing
 import fr.luteal.core.model.meds.Composition
 import fr.luteal.core.model.meds.DrugClass
@@ -62,7 +59,12 @@ fun MedsSettingsScreen(
     val followupDelay by viewModel.painFollowupDelayMinutes.collectAsStateWithLifecycle()
     var current by remember { mutableStateOf<MedsPage>(MedsPage.List) }
     val navigateBack: () -> Unit = {
-        if (current == MedsPage.List) onBack() else current = MedsPage.List
+        when (current) {
+            MedsPage.List -> onBack()
+            is MedsPage.MedicationForm -> current = MedsPage.List
+            MedsPage.Substances -> current = MedsPage.List
+            is MedsPage.SubstanceForm -> current = MedsPage.Substances
+        }
     }
     BackHandler(onBack = navigateBack)
 
@@ -87,13 +89,13 @@ fun MedsSettingsScreen(
         is MedsPage.SubstanceForm -> Column(
             modifier = Modifier
                 .fillMaxSize()
-                .verticalScroll(rememberScrollState())
                 .padding(LutealSpacing.md),
             verticalArrangement = Arrangement.spacedBy(LutealSpacing.sm)
         ) {
             ScreenBack(onClick = navigateBack)
             SubstanceForm(
                 substance = catalog.substances.find { it.id == shown.id },
+                modifier = Modifier.weight(1f),
                 onSave = {
                     viewModel.saveSubstance(it)
                     current = MedsPage.Substances
@@ -107,29 +109,41 @@ fun MedsSettingsScreen(
                 .padding(LutealSpacing.md),
             verticalArrangement = Arrangement.spacedBy(LutealSpacing.sm)
         ) {
-            ScreenBack(onClick = navigateBack)
-            Text(
-                text = stringResource(R.string.meds_disclaimer),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
             when (shown) {
-                MedsPage.List -> MedicationList(
-                    catalog = catalog,
-                    seedOffered = seedOffered,
-                    followupDelay = followupDelay,
-                    onAcceptSeed = viewModel::acceptSeed,
-                    onDismissSeed = viewModel::dismissSeed,
-                    onFollowupDelay = viewModel::setPainFollowupDelayMinutes,
-                    onOpenMedication = { current = MedsPage.MedicationForm(it) },
-                    onAddMedication = { current = MedsPage.MedicationForm(null) },
-                    onOpenSubstances = { current = MedsPage.Substances }
-                )
-                MedsPage.Substances -> SubstancesList(
-                    catalog = catalog,
-                    onOpenSubstance = { current = MedsPage.SubstanceForm(it) },
-                    onAddSubstance = { current = MedsPage.SubstanceForm(null) }
-                )
+                MedsPage.List -> {
+                    SettingsListHeader(
+                        onBack = navigateBack,
+                        onAdd = { current = MedsPage.MedicationForm(null) },
+                        addContentDescription = stringResource(R.string.meds_add_medication)
+                    )
+                    Text(
+                        text = stringResource(R.string.meds_disclaimer),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    MedicationList(
+                        catalog = catalog,
+                        seedOffered = seedOffered,
+                        followupDelay = followupDelay,
+                        onAcceptSeed = viewModel::acceptSeed,
+                        onDismissSeed = viewModel::dismissSeed,
+                        onFollowupDelay = viewModel::setPainFollowupDelayMinutes,
+                        onOpenMedication = { current = MedsPage.MedicationForm(it) },
+                        onOpenSubstances = { current = MedsPage.Substances }
+                    )
+                }
+                MedsPage.Substances -> {
+                    SettingsListHeader(
+                        onBack = navigateBack,
+                        onAdd = { current = MedsPage.SubstanceForm(null) },
+                        addContentDescription = stringResource(R.string.meds_add_composition)
+                    )
+                    SubstancesList(
+                        catalog = catalog,
+                        onOpenSubstance = { current = MedsPage.SubstanceForm(it) }
+                    )
+                }
+                else -> Unit
             }
         }
     }
@@ -149,7 +163,6 @@ private fun MedicationList(
     onDismissSeed: () -> Unit,
     onFollowupDelay: (Int) -> Unit,
     onOpenMedication: (String) -> Unit,
-    onAddMedication: () -> Unit,
     onOpenSubstances: () -> Unit
 ) {
     if (!seedOffered) {
@@ -186,11 +199,6 @@ private fun MedicationList(
             }
         }
     }
-    LutealPrimaryButton(
-        text = stringResource(R.string.meds_add_medication),
-        onClick = onAddMedication,
-        modifier = Modifier.fillMaxWidth()
-    )
     LutealSecondaryButton(
         text = stringResource(R.string.meds_substances),
         onClick = onOpenSubstances,
@@ -211,8 +219,7 @@ private fun MedicationList(
 @Composable
 private fun SubstancesList(
     catalog: MedicationCatalog,
-    onOpenSubstance: (String) -> Unit,
-    onAddSubstance: () -> Unit
+    onOpenSubstance: (String) -> Unit
 ) {
     catalog.substances.forEach { substance ->
         LutealCard(
@@ -227,11 +234,6 @@ private fun SubstancesList(
             )
         }
     }
-    LutealPrimaryButton(
-        text = stringResource(R.string.meds_add_composition),
-        onClick = onAddSubstance,
-        modifier = Modifier.fillMaxWidth()
-    )
 }
 
 @Composable
@@ -289,7 +291,7 @@ private fun MedicationForm(
             )
         }
     }
-    Column(modifier = modifier.fillMaxWidth()) {
+    Column(modifier = modifier.fillMaxSize()) {
         Column(
             modifier = Modifier
                 .weight(1f)
@@ -362,33 +364,12 @@ private fun MedicationForm(
                     )
                 }
             }
-            if (medication != null) {
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                    IconButton(
-                        onClick = {
-                            if (archived) {
-                                archived = false
-                                trySave()
-                            } else {
-                                confirmArchive = true
-                            }
-                        }
-                    ) {
-                        Icon(
-                            Icons.Filled.Delete,
-                            contentDescription = stringResource(
-                                if (archived) R.string.meds_restore else R.string.meds_archive
-                            )
-                        )
-                    }
-                }
-                if (archived) {
-                    Text(
-                        stringResource(R.string.meds_archived),
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        style = MaterialTheme.typography.bodySmall
-                    )
-                }
+            if (medication != null && archived) {
+                Text(
+                    stringResource(R.string.meds_archived),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = MaterialTheme.typography.bodySmall
+                )
             }
             if (confirmArchive && medication != null) {
                 AlertDialog(
@@ -410,17 +391,34 @@ private fun MedicationForm(
                 )
             }
         }
-        FormSaveButton(
-            onClick = trySave,
-            enabled = name.isNotBlank() && rows.any { (substanceId, amount) ->
+        FormEditorFooter(
+            onSave = trySave,
+            saveEnabled = name.isNotBlank() && rows.any { (substanceId, amount) ->
                 substanceId.isNotBlank() && (amount.replace(',', '.').toDoubleOrNull() ?: 0.0) > 0.0
-            }
+            },
+            onDestructive = medication?.let {
+                {
+                    if (archived) {
+                        archived = false
+                        trySave()
+                    } else {
+                        confirmArchive = true
+                    }
+                }
+            },
+            destructiveContentDescription = stringResource(
+                if (archived) R.string.meds_restore else R.string.meds_archive
+            )
         )
     }
 }
 
 @Composable
-private fun SubstanceForm(substance: Substance?, onSave: (Substance) -> Unit) {
+private fun SubstanceForm(
+    substance: Substance?,
+    modifier: Modifier = Modifier,
+    onSave: (Substance) -> Unit
+) {
     var name by rememberSaveable { mutableStateOf(substance?.name.orEmpty()) }
     var maxPeriod by rememberSaveable { mutableStateOf(substance?.maxPerIntakeMg?.toString().orEmpty()) }
     var everyHours by rememberSaveable {
@@ -429,48 +427,54 @@ private fun SubstanceForm(substance: Substance?, onSave: (Substance) -> Unit) {
         )
     }
     var maxDaily by rememberSaveable { mutableStateOf(substance?.maxDailyMg?.toString().orEmpty()) }
-    OutlinedTextField(
-        value = name,
-        onValueChange = { name = it },
-        label = { Text(stringResource(R.string.meds_name)) },
-        modifier = Modifier.fillMaxWidth()
-    )
-    OutlinedTextField(
-        value = maxPeriod,
-        onValueChange = { maxPeriod = it },
-        label = { Text(stringResource(R.string.meds_max_period)) },
-        modifier = Modifier.fillMaxWidth()
-    )
-    OutlinedTextField(
-        value = everyHours,
-        onValueChange = { everyHours = it.filter { ch -> ch.isDigit() } },
-        label = { Text(stringResource(R.string.meds_every_hours)) },
-        modifier = Modifier.fillMaxWidth()
-    )
-    OutlinedTextField(
-        value = maxDaily,
-        onValueChange = { maxDaily = it },
-        label = { Text(stringResource(R.string.meds_max_daily)) },
-        modifier = Modifier.fillMaxWidth()
-    )
-    LutealPrimaryButton(
-        text = stringResource(R.string.meds_save),
-        onClick = {
-            if (name.isBlank()) return@LutealPrimaryButton
-            val hours = everyHours.toIntOrNull()
-            onSave(
-                Substance(
-                    id = substance?.id ?: UUID.randomUUID().toString(),
-                    name = name,
-                    drugClass = substance?.drugClass ?: DrugClass.OTHER,
-                    maxDailyMg = maxDaily.replace(',', '.').toDoubleOrNull(),
-                    maxPerIntakeMg = maxPeriod.replace(',', '.').toDoubleOrNull(),
-                    minIntervalMinutes = hours?.takeIf { it > 0 }?.times(60),
-                    validated = substance?.validated ?: true,
-                    notes = substance?.notes.orEmpty()
-                )
+    fun persist() {
+        if (name.isBlank()) return
+        val hours = everyHours.toIntOrNull()
+        onSave(
+            Substance(
+                id = substance?.id ?: UUID.randomUUID().toString(),
+                name = name,
+                drugClass = substance?.drugClass ?: DrugClass.OTHER,
+                maxDailyMg = maxDaily.replace(',', '.').toDoubleOrNull(),
+                maxPerIntakeMg = maxPeriod.replace(',', '.').toDoubleOrNull(),
+                minIntervalMinutes = hours?.takeIf { it > 0 }?.times(60),
+                validated = substance?.validated ?: true,
+                notes = substance?.notes.orEmpty()
             )
-        },
-        modifier = Modifier.fillMaxWidth()
-    )
+        )
+    }
+    Column(modifier = modifier.fillMaxSize()) {
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.spacedBy(LutealSpacing.sm)
+        ) {
+            OutlinedTextField(
+                value = name,
+                onValueChange = { name = it },
+                label = { Text(stringResource(R.string.meds_name)) },
+                modifier = Modifier.fillMaxWidth()
+            )
+            OutlinedTextField(
+                value = maxPeriod,
+                onValueChange = { maxPeriod = it },
+                label = { Text(stringResource(R.string.meds_max_period)) },
+                modifier = Modifier.fillMaxWidth()
+            )
+            OutlinedTextField(
+                value = everyHours,
+                onValueChange = { everyHours = it.filter { ch -> ch.isDigit() } },
+                label = { Text(stringResource(R.string.meds_every_hours)) },
+                modifier = Modifier.fillMaxWidth()
+            )
+            OutlinedTextField(
+                value = maxDaily,
+                onValueChange = { maxDaily = it },
+                label = { Text(stringResource(R.string.meds_max_daily)) },
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
+        FormEditorFooter(onSave = ::persist, saveEnabled = name.isNotBlank())
+    }
 }

@@ -1109,7 +1109,12 @@
     <string name="professional_delete_title">Supprimer ce professionnel ?</string>
     <string name="professional_delete_body">Les rendez-vous déjà notés restent dans l’historique.</string>
     <string name="professional_name">Nom</string>
+    <string name="professional_place">Lieu</string>
+    <string name="professional_phone">Téléphone</string>
+    <string name="professional_notes">Notes</string>
     <string name="professional_custom_specialty">Spécialité (libre)</string>
+    <string name="care_program_delete_title">Supprimer ce programme ?</string>
+    <string name="care_program_delete_body">Les séances déjà enregistrées restent dans l’historique.</string>
     <string name="agenda_fab_open">Ouvrir les saisies</string>
     <string name="agenda_fab_close">Fermer les saisies</string>
     <string name="agenda_events_empty">Aucun événement ce jour</string>
@@ -1249,6 +1254,8 @@
     <string name="agenda_hormonal_hidden">Prédiction masquée : traitement hormonal continu en cours.</string>
     <string name="meds_plans">Plans en cours</string>
     <string name="meds_plans_empty">Aucun plan récurrent pour le moment.</string>
+    <string name="meds_plan_delete_title">Supprimer ce plan ?</string>
+    <string name="meds_plan_delete_body">Les rappels associés seront retirés.</string>
     <string name="meds_add_plan">Ajouter un plan</string>
     <string name="meds_recent">Prises récentes</string>
     <string name="meds_next_slot">Prochain horaire : %1$s</string>

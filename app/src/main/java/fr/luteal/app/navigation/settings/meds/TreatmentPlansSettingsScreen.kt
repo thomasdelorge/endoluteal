@@ -23,8 +23,8 @@ import fr.luteal.app.R
 import fr.luteal.app.navigation.meds.MedsViewModel
 import fr.luteal.core.common.LocalizedDateFormatter
 import fr.luteal.core.designsystem.component.LutealCard
-import fr.luteal.core.designsystem.component.LutealPrimaryButton
 import fr.luteal.core.designsystem.component.ScreenBack
+import fr.luteal.core.designsystem.component.SettingsListHeader
 import fr.luteal.core.designsystem.theme.LutealSpacing
 
 private sealed interface PlansPage {
@@ -59,6 +59,7 @@ fun TreatmentPlansSettingsScreen(
             TreatmentPlanEditor(
                 medications = state.medications,
                 plan = shown.planId?.let { id -> state.plans.find { it.plan.id == id }?.plan },
+                modifier = Modifier.weight(1f),
                 onSave = { plan ->
                     viewModel.upsertPlan(plan)
                     page = PlansPage.List
@@ -78,7 +79,11 @@ fun TreatmentPlansSettingsScreen(
                 .padding(LutealSpacing.md),
             verticalArrangement = Arrangement.spacedBy(LutealSpacing.sm)
         ) {
-            ScreenBack(onClick = navigateBack)
+            SettingsListHeader(
+                onBack = navigateBack,
+                onAdd = { page = PlansPage.Edit(null) },
+                addContentDescription = stringResource(R.string.meds_add_plan)
+            )
             Text(stringResource(R.string.meds_plans), style = MaterialTheme.typography.titleLarge)
             Text(
                 stringResource(R.string.meds_disclaimer),
@@ -113,11 +118,6 @@ fun TreatmentPlansSettingsScreen(
                     }
                 }
             }
-            LutealPrimaryButton(
-                text = stringResource(R.string.meds_add_plan),
-                onClick = { page = PlansPage.Edit(null) },
-                modifier = Modifier.fillMaxWidth()
-            )
         }
     }
 }
