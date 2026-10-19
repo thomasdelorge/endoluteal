@@ -56,7 +56,6 @@ fun RecapWizardSheet(
     LaunchedEffect(date) { viewModel.open(date) }
     val recap by viewModel.recap.collectAsStateWithLifecycle()
     val cycleUi by viewModel.cycleUi.collectAsStateWithLifecycle()
-    val dayEvents by viewModel.dayEventLines.collectAsStateWithLifecycle()
     val hideDyspareunia by viewModel.hideDyspareunia.collectAsStateWithLifecycle()
     val hideLibido by viewModel.hideLibido.collectAsStateWithLifecycle()
     val steps = RecapStep.ordered
@@ -136,7 +135,6 @@ fun RecapWizardSheet(
                             }
                         )
                         RecapStep.PAIN -> PainStep(
-                            dayEventLines = dayEvents,
                             hideDyspareunia = hideDyspareunia,
                             initial = currentRecap.pain,
                             active = stepActive,

@@ -21,7 +21,6 @@ import fr.luteal.core.model.recap.RecapPainPayload
 
 @Composable
 fun PainStep(
-    dayEventLines: List<String>,
     hideDyspareunia: Boolean,
     initial: RecapPainPayload,
     onContinue: (RecapPainPayload) -> Unit,
@@ -55,12 +54,6 @@ fun PainStep(
 
     Column(verticalArrangement = Arrangement.spacedBy(LutealSpacing.sm)) {
         Text(stringResource(R.string.recap_step_pain), style = MaterialTheme.typography.titleMedium)
-        if (dayEventLines.isNotEmpty()) {
-            Text(stringResource(R.string.recap_day_events), style = MaterialTheme.typography.labelLarge)
-            dayEventLines.forEach { line ->
-                Text(line, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
-        }
         BodyMapPainMarks(marks = marks, onChange = { marks = it })
         FiveDField(
             stringResource(R.string.recap_5d_dysmenorrhea),

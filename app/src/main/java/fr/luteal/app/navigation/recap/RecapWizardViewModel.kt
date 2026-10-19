@@ -3,13 +3,11 @@ package fr.luteal.app.navigation.recap
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
-import fr.luteal.app.navigation.eventsOnDay
 import fr.luteal.app.notification.NotificationScheduler
 import fr.luteal.core.data.repository.BiomarkerRepository
 import fr.luteal.core.data.repository.CycleRepository
 import fr.luteal.core.data.repository.DailyEntryRepository
 import fr.luteal.core.data.repository.DailyRecapRepository
-import fr.luteal.core.data.repository.JournalEventRepository
 import fr.luteal.core.data.repository.TreatmentPlanRepository
 import fr.luteal.core.data.repository.UserRepository
 import fr.luteal.core.domain.RecapCycleWriter
@@ -19,7 +17,6 @@ import fr.luteal.core.model.CycleEstimateResult
 import fr.luteal.core.model.CurrentCyclePhase
 import fr.luteal.core.model.CurrentCyclePhaseCalculator
 import fr.luteal.core.model.CyclePhase
-import fr.luteal.core.model.JournalEventType
 import fr.luteal.core.model.PhaseCertainty
 import fr.luteal.core.model.recap.DailyRecap
 import fr.luteal.core.model.recap.RecapBowelPayload
@@ -32,7 +29,6 @@ import fr.luteal.core.model.meds.continuousHormonalActive
 import java.time.Clock
 import java.time.Instant
 import java.time.LocalDate
-import java.time.ZoneId
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -49,7 +45,6 @@ class RecapWizardViewModel @Inject constructor(
     private val dailyEntryRepository: DailyEntryRepository,
     private val biomarkerRepository: BiomarkerRepository,
     private val cycleRepository: CycleRepository,
-    private val journalEventRepository: JournalEventRepository,
     private val userRepository: UserRepository,
     private val treatmentPlanRepository: TreatmentPlanRepository,
     private val notificationScheduler: NotificationScheduler,
@@ -63,9 +58,6 @@ class RecapWizardViewModel @Inject constructor(
 
     private val _cycleUi = MutableStateFlow<RecapCycleUiState?>(null)
     val cycleUi: StateFlow<RecapCycleUiState?> = _cycleUi.asStateFlow()
-
-    private val _dayEventLines = MutableStateFlow<List<String>>(emptyList())
-    val dayEventLines: StateFlow<List<String>> = _dayEventLines.asStateFlow()
 
     val hideDyspareunia: StateFlow<Boolean> = userRepository.getUserPreferences()
         .map { it.hideDyspareuniaInRecap }
@@ -82,7 +74,6 @@ class RecapWizardViewModel @Inject constructor(
             val existing = dailyRecapRepository.get(date)
             _recap.value = existing ?: DailyRecap.empty(date, clock.instant())
             refreshCycleUi(date)
-            refreshDayEvents(date)
         }
     }
 
@@ -166,7 +157,6 @@ class RecapWizardViewModel @Inject constructor(
         _recapDate.value = null
         _recap.value = null
         _cycleUi.value = null
-        _dayEventLines.value = emptyList()
     }
 
     private suspend fun refreshCycleUi(date: LocalDate) {
@@ -198,19 +188,4 @@ class RecapWizardViewModel @Inject constructor(
         _cycleUi.value = RecapCycleUiState(estimatedPhase = estimated, phase = phase, isEstimate = isEstimate)
     }
 
-    private suspend fun refreshDayEvents(date: LocalDate) {
-        val zone = ZoneId.systemDefault()
-        val from = date.atStartOfDay(zone).toInstant()
-        val to = date.plusDays(1).atStartOfDay(zone).toInstant()
-        val events = journalEventRepository.observeBetween(from, to).first()
-        val filtered = eventsOnDay(events, date).filter { event ->
-            event.type in setOf(
-                JournalEventType.MEDICATION_INTAKE,
-                JournalEventType.SYMPTOM,
-                JournalEventType.CARE_SESSION,
-                JournalEventType.PAIN_CHECK
-            )
-        }
-        _dayEventLines.value = filtered.map { event -> event.type.name }
-    }
 }

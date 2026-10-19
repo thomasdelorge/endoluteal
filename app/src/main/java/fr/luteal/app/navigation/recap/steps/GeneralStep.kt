@@ -2,10 +2,6 @@ package fr.luteal.app.navigation.recap.steps
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -14,15 +10,14 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import fr.luteal.app.R
 import fr.luteal.core.designsystem.component.LabeledScale
+import fr.luteal.core.designsystem.component.SettingsDropdownField
 import fr.luteal.core.designsystem.theme.LutealSpacing
 import fr.luteal.core.model.recap.RecapDailyImpact
 import fr.luteal.core.model.recap.RecapGeneralPayload
 
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun GeneralStep(
     initial: RecapGeneralPayload,
@@ -79,42 +74,37 @@ fun GeneralStep(
         LabeledScale(stringResource(R.string.recap_general_nausea), nausea, onValueChange = { nausea = it })
         LabeledScale(stringResource(R.string.recap_general_dizziness), dizziness, onValueChange = { dizziness = it })
         LabeledScale(stringResource(R.string.recap_general_vertigo), vertigo, onValueChange = { vertigo = it })
-        Text(stringResource(R.string.recap_general_alcohol), style = MaterialTheme.typography.labelLarge)
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(LutealSpacing.xs)) {
-            listOf(0, 1, 2, 3).forEach { drinks ->
-                FilterChip(
-                    selected = alcohol == drinks,
-                    onClick = { alcohol = drinks },
-                    label = {
-                        Text(
-                            when (drinks) {
-                                0 -> stringResource(R.string.recap_alcohol_0)
-                                1 -> stringResource(R.string.recap_alcohol_1)
-                                2 -> stringResource(R.string.recap_alcohol_2)
-                                else -> stringResource(R.string.recap_alcohol_3_plus)
-                            }
-                        )
-                    }
-                )
-            }
-        }
-        Text(stringResource(R.string.recap_general_impact), style = MaterialTheme.typography.labelLarge)
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(LutealSpacing.xs)) {
-            RecapDailyImpact.entries.forEach { option ->
-                FilterChip(
-                    selected = impact == option.name,
-                    onClick = { impact = option.name },
-                    label = { Text(dailyImpactLabel(option)) }
-                )
-            }
-        }
+        SettingsDropdownField(
+            label = stringResource(R.string.recap_general_alcohol),
+            selectedLabel = alcoholLabel(alcohol ?: 0),
+            options = listOf(0, 1, 2, 3).map { it.toString() to alcoholLabel(it) },
+            onSelect = { picked -> alcohol = picked.toInt() }
+        )
+        SettingsDropdownField(
+            label = stringResource(R.string.recap_general_impact),
+            selectedLabel = dailyImpactLabel(RecapDailyImpact.valueOf(impact)),
+            options = RecapDailyImpact.entries.map { it.name to dailyImpactLabel(it) },
+            onSelect = { picked -> impact = picked }
+        )
     }
 }
 
 @Composable
-private fun dailyImpactLabel(impact: RecapDailyImpact): String = when (impact) {
-    RecapDailyImpact.NONE -> stringResource(R.string.recap_impact_none)
-    RecapDailyImpact.REDUCED_ACTIVITY -> stringResource(R.string.recap_impact_reduced)
-    RecapDailyImpact.CANCELLED_WORK -> stringResource(R.string.recap_impact_cancelled)
-    RecapDailyImpact.BEDREST -> stringResource(R.string.recap_impact_bedrest)
-}
+private fun alcoholLabel(drinks: Int): String = stringResource(
+    when (drinks) {
+        0 -> R.string.recap_alcohol_0
+        1 -> R.string.recap_alcohol_1
+        2 -> R.string.recap_alcohol_2
+        else -> R.string.recap_alcohol_3_plus
+    }
+)
+
+@Composable
+private fun dailyImpactLabel(impact: RecapDailyImpact): String = stringResource(
+    when (impact) {
+        RecapDailyImpact.NONE -> R.string.recap_impact_none
+        RecapDailyImpact.REDUCED_ACTIVITY -> R.string.recap_impact_reduced
+        RecapDailyImpact.CANCELLED_WORK -> R.string.recap_impact_cancelled
+        RecapDailyImpact.BEDREST -> R.string.recap_impact_bedrest
+    }
+)
