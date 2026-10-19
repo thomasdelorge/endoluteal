@@ -3,6 +3,7 @@ package fr.luteal.app.navigation.entry
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -19,6 +20,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.Switch
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -34,6 +36,7 @@ import fr.luteal.app.R
 import fr.luteal.core.common.LocalizedDateFormatter
 import fr.luteal.core.designsystem.component.DateTimeField
 import fr.luteal.core.designsystem.component.EntryScaffold
+import fr.luteal.core.designsystem.component.LutealSecondaryButton
 import fr.luteal.core.designsystem.component.PainScale
 import fr.luteal.core.designsystem.component.bodymap.BodyMap
 import fr.luteal.core.designsystem.theme.LutealSpacing
@@ -77,8 +80,8 @@ fun MedicationIntakeSheet(
     var showAfterMap by remember { mutableStateOf(false) }
     var report by remember { mutableStateOf<SafetyReport?>(null) }
     var askDanger by remember { mutableStateOf(false) }
-    var doneAt by remember { mutableStateOf<Instant?>(null) }
     var confirmDelete by remember { mutableStateOf(false) }
+    var scheduleNextReminder by remember { mutableStateOf(true) }
     val scope = rememberCoroutineScope()
 
     LaunchedEffect(existingEventId) {
@@ -93,6 +96,14 @@ fun MedicationIntakeSheet(
         val after = viewModel.painCheckFor(id)
         afterMarks = after?.marks.orEmpty()
         afterIntensity = after?.marks?.maxOfOrNull { it.intensity }
+        scheduleNextReminder = viewModel.isNextReminderScheduled(id)
+    }
+
+    LaunchedEffect(existingEventId, medicationId) {
+        if (existingEventId == null && medicationId != null) {
+            val repeat = catalog.medications.find { it.id == medicationId }?.repeatEveryHours
+            scheduleNextReminder = repeat != null && repeat > 0
+        }
     }
 
     if (confirmDelete && existingEventId != null) {
@@ -139,6 +150,24 @@ fun MedicationIntakeSheet(
         }
     }
 
+    fun persistIntake(dangerAcknowledged: Boolean) {
+        val id = medicationId ?: return
+        val count = unitCount ?: return
+        scope.launch {
+            viewModel.saveIntake(
+                id,
+                count,
+                at.atZone(zone).toInstant(),
+                marksWith(intensity, marks),
+                dangerAcknowledged,
+                existingEventId,
+                scheduleNextReminder
+            )
+            saveAfterPain(existingEventId)
+            onDismiss()
+        }
+    }
+
     LaunchedEffect(medicationId, units, at, catalog.medications.size) {
         val id = medicationId
         val count = unitCount
@@ -160,22 +189,7 @@ fun MedicationIntakeSheet(
             if (alerts.any { it.severity == AlertSeverity.DANGER }) {
                 askDanger = true
             } else {
-                scope.launch {
-                    val saved = viewModel.saveIntake(
-                        id,
-                        count,
-                        at.atZone(zone).toInstant(),
-                        marksWith(intensity, marks),
-                        false,
-                        existingEventId
-                    )
-                    saveAfterPain(existingEventId)
-                    if (existingEventId == null) {
-                        doneAt = saved.nextPossibleIntakeAt
-                    } else {
-                        onDismiss()
-                    }
-                }
+                persistIntake(false)
             }
         }
     ) {
@@ -219,7 +233,21 @@ fun MedicationIntakeSheet(
             )
             DateTimeField(value = at, onValueChange = { at = it })
             report?.alerts.orEmpty().forEach { alert ->
-                Text(alertText(alert, catalog.rules.find { it.id == alert.ruleId }?.message))
+                Text(alertText(alert))
+            }
+            val repeatHours = selected?.repeatEveryHours
+            if (repeatHours != null && repeatHours > 0) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+                ) {
+                    Text(stringResource(R.string.intake_schedule_next_reminder))
+                    Switch(
+                        checked = scheduleNextReminder,
+                        onCheckedChange = { scheduleNextReminder = it }
+                    )
+                }
             }
             Text(stringResource(R.string.intake_pain_before))
             PainScale(value = intensity, onValueChange = { intensity = it })
@@ -240,9 +268,11 @@ fun MedicationIntakeSheet(
                 }
             }
             if (existingEventId != null) {
-                TextButton(onClick = { confirmDelete = true }) {
-                    Text(stringResource(R.string.intake_delete))
-                }
+                LutealSecondaryButton(
+                    text = stringResource(R.string.intake_delete),
+                    onClick = { confirmDelete = true },
+                    modifier = Modifier.fillMaxWidth()
+                )
             }
     }
 
@@ -254,24 +284,7 @@ fun MedicationIntakeSheet(
             confirmButton = {
                 Button(onClick = {
                     askDanger = false
-                    val id = medicationId ?: return@Button
-                    val count = unitCount ?: return@Button
-                    scope.launch {
-                        val saved = viewModel.saveIntake(
-                            id,
-                            count,
-                            at.atZone(zone).toInstant(),
-                            marksWith(intensity, marks),
-                            true,
-                            existingEventId
-                        )
-                        saveAfterPain(existingEventId)
-                        if (existingEventId == null) {
-                            doneAt = saved.nextPossibleIntakeAt
-                        } else {
-                            onDismiss()
-                        }
-                    }
+                    persistIntake(true)
                 }) { Text(stringResource(R.string.intake_confirm)) }
             },
             dismissButton = {
@@ -280,35 +293,6 @@ fun MedicationIntakeSheet(
         )
     }
 
-    val finished = doneAt
-    if (finished != null && selected != null && unitCount != null) {
-        val whenLabel = LocalizedDateFormatter.formatNumericDateTime(finished.atZone(zone).toLocalDateTime())
-        val now = Instant.now()
-        AlertDialog(
-            onDismissRequest = onDismiss,
-            title = { Text(stringResource(R.string.intake_next_title)) },
-            text = {
-                Text(
-                    if (finished.isAfter(now)) {
-                        stringResource(R.string.intake_next_possible, whenLabel)
-                    } else {
-                        stringResource(R.string.intake_next_now)
-                    }
-                )
-            },
-            confirmButton = {
-                TextButton(onClick = {
-                    if (finished.isAfter(now)) {
-                        viewModel.scheduleNextDose(selected.id, unitCount, finished, selected.name)
-                    }
-                    onDismiss()
-                }) { Text(stringResource(R.string.intake_schedule)) }
-            },
-            dismissButton = {
-                TextButton(onClick = onDismiss) { Text(stringResource(R.string.intake_ok)) }
-            }
-        )
-    }
 }
 
 private fun marksWith(intensity: Int?, marks: List<PainMark>): List<PainMark> {
@@ -317,22 +301,16 @@ private fun marksWith(intensity: Int?, marks: List<PainMark>): List<PainMark> {
 }
 
 @Composable
-private fun alertText(alert: SafetyAlert, ruleMessage: String?): String {
-    val base = when (alert.type) {
-        SafetyAlertType.DAILY_MAX_EXCEEDED -> stringResource(
-            R.string.meds_alert_daily,
-            alert.actualMg ?: 0.0,
-            alert.limitMg ?: 0.0
-        )
-        SafetyAlertType.PER_INTAKE_MAX_EXCEEDED -> stringResource(
-            R.string.meds_alert_intake,
-            alert.actualMg ?: 0.0,
-            alert.limitMg ?: 0.0
-        )
-        SafetyAlertType.MIN_INTERVAL_NOT_ELAPSED -> stringResource(R.string.meds_alert_interval)
-        SafetyAlertType.CLASS_DUPLICATE -> stringResource(R.string.meds_alert_class)
-        SafetyAlertType.INTERACTION_RULE -> ruleMessage ?: stringResource(R.string.meds_alert_rule)
-        SafetyAlertType.CONTRAINDICATED_SUBSTANCE -> stringResource(R.string.meds_alert_contraindication)
-    }
-    return if (alert.unvalidated) "$base ${stringResource(R.string.meds_alert_unvalidated)}" else base
+private fun alertText(alert: SafetyAlert): String = when (alert.type) {
+    SafetyAlertType.DAILY_MAX_EXCEEDED -> stringResource(
+        R.string.meds_alert_daily,
+        alert.actualMg ?: 0.0,
+        alert.limitMg ?: 0.0
+    )
+    SafetyAlertType.PER_INTAKE_MAX_EXCEEDED -> stringResource(
+        R.string.meds_alert_intake,
+        alert.actualMg ?: 0.0,
+        alert.limitMg ?: 0.0
+    )
+    SafetyAlertType.CONTRAINDICATED_SUBSTANCE -> stringResource(R.string.meds_alert_contraindication)
 }

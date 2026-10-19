@@ -43,7 +43,8 @@ data class Medication(
     val contraindications: String,
     val archived: Boolean,
     val compositions: List<Composition>,
-    val contraindicatedSubstanceIds: List<String> = emptyList()
+    val contraindicatedSubstanceIds: List<String> = emptyList(),
+    val repeatEveryHours: Int? = null
 )
 
 data class InteractionRule(

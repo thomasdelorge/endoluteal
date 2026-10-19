@@ -218,7 +218,8 @@ class DataExportManager @Inject constructor(
                 compositions = compositions[entity.id].orEmpty().map { row ->
                     CompositionBackupDto(row.substanceId, row.amountMgPerUnit)
                 },
-                contraindicatedSubstanceIds = contraindications[entity.id].orEmpty().map { it.substanceId }
+                contraindicatedSubstanceIds = contraindications[entity.id].orEmpty().map { it.substanceId },
+                repeatEveryHours = entity.repeatEveryHours
             )
         }
         val interactionRules = medicationDao.rulesOnce().map { entity ->

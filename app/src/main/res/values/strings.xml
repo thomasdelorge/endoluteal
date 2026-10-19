@@ -762,7 +762,7 @@
     <string name="calendar_legend_biomarkers">Biomarqueurs (température, glaire, tests)</string>
     <string name="calendar_month_summary_period_days">%1$d jours de règles enregistrés</string>
     <string name="calendar_picker_title">Choisir le mois et l’année</string>
-    <string name="calendar_picker_confirm">Afficher le mois</string>
+    <string name="calendar_picker_confirm">Valider</string>
     <string name="inspection_cycle_day">Jour %1$d du cycle</string>
     <string name="inspection_phase_recorded">%1$s (enregistrée)</string>
     <string name="inspection_phase_estimated">%1$s (estimée)</string>
@@ -1196,6 +1196,13 @@
     <string name="meds_validated">Valeurs validées</string>
     <string name="meds_notes">Notes</string>
     <string name="meds_max_daily">Maximum sur 24 h (mg)</string>
+    <string name="meds_max_period">Maximum (mg)</string>
+    <string name="meds_every_hours">Tous les (heures)</string>
+    <string name="meds_repeat_every_hours">Rappel tous les (heures)</string>
+    <string name="meds_substance_limit_period">%1$.0f mg / %2$d h</string>
+    <string name="meds_substance_limit_daily">%1$.0f mg / 24 h</string>
+    <string name="meds_substance_no_limits">Aucune limite renseignée</string>
+    <string name="intake_schedule_next_reminder">Rappeler la prochaine prise</string>
     <string name="meds_max_intake">Maximum par prise (mg)</string>
     <string name="meds_interval">Intervalle minimum (minutes)</string>
     <string name="meds_rule_message">Message</string>

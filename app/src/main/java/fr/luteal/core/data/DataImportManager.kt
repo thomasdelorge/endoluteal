@@ -362,7 +362,8 @@ class DataImportManager @Inject constructor(
                                 name = medication.name,
                                 form = medication.form,
                                 contraindications = medication.contraindications,
-                                archived = medication.archived
+                                archived = medication.archived,
+                                repeatEveryHours = medication.repeatEveryHours
                             ),
                             medication.compositions.map { composition ->
                                 MedicationSubstanceEntity(

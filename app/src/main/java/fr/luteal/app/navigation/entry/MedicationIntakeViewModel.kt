@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import fr.luteal.app.notification.ReminderScheduler
 import fr.luteal.core.data.datastore.UserPreferencesDataStore
+import fr.luteal.core.data.local.ReminderDao
 import fr.luteal.core.data.repository.JournalEventRepository
 import fr.luteal.core.data.repository.MedicationIntakeRepository
 import fr.luteal.core.data.repository.MedicationRepository
@@ -13,11 +14,13 @@ import fr.luteal.core.model.JournalEvent
 import fr.luteal.core.model.JournalEventType
 import fr.luteal.core.model.MedsAlarmPayload
 import fr.luteal.core.model.PainMark
+import fr.luteal.core.model.ReminderStatus
 import fr.luteal.core.model.ReminderType
 import fr.luteal.core.model.meds.CandidateIntake
 import fr.luteal.core.model.meds.MedicationCatalog
 import fr.luteal.core.model.meds.MedicationSafetyChecker
 import fr.luteal.core.model.meds.SafetyReport
+import fr.luteal.core.model.meds.medicationNextReminderId
 import java.time.Clock
 import java.time.Duration
 import java.time.Instant
@@ -38,6 +41,7 @@ class MedicationIntakeViewModel @Inject constructor(
     private val intakeRepository: MedicationIntakeRepository,
     private val journalEventRepository: JournalEventRepository,
     private val reminderScheduler: ReminderScheduler,
+    private val reminderDao: ReminderDao,
     private val userPreferencesDataStore: UserPreferencesDataStore,
     private val clock: Clock
 ) : ViewModel() {
@@ -60,8 +64,14 @@ class MedicationIntakeViewModel @Inject constructor(
 
     suspend fun intakeForEvent(eventId: String) = intakeRepository.intakeForEvent(eventId)
 
+    suspend fun isNextReminderScheduled(eventId: String): Boolean {
+        val reminder = reminderDao.get(medicationNextReminderId(eventId)) ?: return false
+        return reminder.status == ReminderStatus.SCHEDULED.name
+    }
+
     suspend fun deleteIntake(eventId: String) {
         intakeRepository.delete(eventId)
+        reminderScheduler.cancel(medicationNextReminderId(eventId))
     }
 
     suspend fun saveIntake(
@@ -70,7 +80,8 @@ class MedicationIntakeViewModel @Inject constructor(
         at: Instant,
         marks: List<PainMark>,
         dangerAcknowledged: Boolean,
-        eventId: String? = null
+        eventId: String? = null,
+        scheduleNextReminder: Boolean = true
     ): SafetyReport {
         val report = evaluate(medicationId, units, at)
         val now = clock.instant()
@@ -98,17 +109,32 @@ class MedicationIntakeViewModel @Inject constructor(
                 eventId = event.id
             )
         }
+        syncNextReminder(event.id, medicationId, units, at, scheduleNextReminder)
         return report
     }
 
-    fun scheduleNextDose(medicationId: String, units: Double, at: Instant, name: String) {
-        viewModelScope.launch {
+    private suspend fun syncNextReminder(
+        eventId: String,
+        medicationId: String,
+        units: Double,
+        at: Instant,
+        enabled: Boolean
+    ) {
+        val medication = medicationRepository.catalogOnce().medications.find { it.id == medicationId }
+        val repeatHours = medication?.repeatEveryHours
+        val reminderId = medicationNextReminderId(eventId)
+        if (enabled && repeatHours != null && repeatHours > 0) {
             reminderScheduler.schedule(
-                id = UUID.randomUUID().toString(),
+                id = reminderId,
                 type = ReminderType.MEDS,
-                triggerAt = at,
-                payloadJson = json.encodeToString(MedsAlarmPayload(medicationId, units, name))
+                triggerAt = at.plus(Duration.ofHours(repeatHours.toLong())),
+                payloadJson = json.encodeToString(
+                    MedsAlarmPayload(medicationId, units, medication.name)
+                ),
+                eventId = eventId
             )
+        } else {
+            reminderScheduler.cancel(reminderId)
         }
     }
 
@@ -117,8 +143,6 @@ class MedicationIntakeViewModel @Inject constructor(
 
     suspend fun savePainCheck(linkedEventId: String?, marks: List<PainMark>) {
         val now = clock.instant()
-        // Reuse the existing linked pain check so a follow-up edit replaces the
-        // reported pain instead of piling up detached duplicates.
         val existingId = linkedEventId?.let { journalEventRepository.getLinkedPainCheck(it)?.id }
         journalEventRepository.upsert(
             JournalEvent(

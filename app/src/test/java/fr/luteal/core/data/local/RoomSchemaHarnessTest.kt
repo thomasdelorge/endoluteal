@@ -101,10 +101,25 @@ class RoomSchemaHarnessTest {
         }
     }
 
+    @Test
+    fun migratesMedicationsRepeatEveryHoursFrom14To15() {
+        helper.createDatabase(MIGRATION_14_DB, 14).close()
+        helper.runMigrationsAndValidate(MIGRATION_14_DB, 15, true, MIGRATION_14_15).use { db ->
+            db.query("PRAGMA table_info(medications)").use { cursor ->
+                var found = false
+                while (cursor.moveToNext()) {
+                    if (cursor.getString(1) == "repeatEveryHours") found = true
+                }
+                assertTrue(found)
+            }
+        }
+    }
+
     companion object {
         private const val TEST_DB = "endoluteal-schema-harness-test.db"
         private const val MIGRATION_DB = "endoluteal-migration-11-12.db"
         private const val MIGRATION_12_DB = "endoluteal-migration-12-13.db"
         private const val MIGRATION_13_DB = "endoluteal-migration-13-14.db"
+        private const val MIGRATION_14_DB = "endoluteal-migration-14-15.db"
     }
 }

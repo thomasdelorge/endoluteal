@@ -9,5 +9,6 @@ data class MedicationEntity(
     val name: String,
     val form: String,
     val contraindications: String,
-    val archived: Boolean
+    val archived: Boolean,
+    val repeatEveryHours: Int? = null
 )

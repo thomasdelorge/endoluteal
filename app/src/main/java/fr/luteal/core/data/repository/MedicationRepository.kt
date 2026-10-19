@@ -179,7 +179,8 @@ private fun MedicationEntity.toDomain(
     contraindications = contraindications,
     archived = archived,
     compositions = rows.map { Composition(it.substanceId, it.amountMgPerUnit) },
-    contraindicatedSubstanceIds = contraindicatedSubstanceIds
+    contraindicatedSubstanceIds = contraindicatedSubstanceIds,
+    repeatEveryHours = repeatEveryHours
 )
 
 private fun Medication.toEntity() = MedicationEntity(
@@ -187,7 +188,8 @@ private fun Medication.toEntity() = MedicationEntity(
     name = name.trim(),
     form = form.trim(),
     contraindications = contraindications.trim(),
-    archived = archived
+    archived = archived,
+    repeatEveryHours = repeatEveryHours
 )
 
 private fun Composition.toEntity(medicationId: String) = MedicationSubstanceEntity(

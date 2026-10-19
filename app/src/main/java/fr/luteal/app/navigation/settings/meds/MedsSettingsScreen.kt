@@ -16,7 +16,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -38,23 +37,19 @@ import fr.luteal.core.designsystem.component.LutealSecondaryButton
 import fr.luteal.core.designsystem.component.ScreenBack
 import fr.luteal.core.designsystem.component.SettingsDropdownField
 import fr.luteal.core.designsystem.theme.LutealSpacing
-import fr.luteal.core.model.meds.AlertSeverity
 import fr.luteal.core.model.meds.Composition
 import fr.luteal.core.model.meds.DrugClass
-import fr.luteal.core.model.meds.InteractionRule
-import fr.luteal.core.model.meds.InteractionTargetType
 import fr.luteal.core.model.meds.Medication
 import fr.luteal.core.model.meds.MedicationCatalog
 import fr.luteal.core.model.meds.Substance
 import java.util.UUID
+import kotlin.math.roundToInt
 
 private sealed interface MedsPage {
     data object List : MedsPage
     data class MedicationForm(val id: String?) : MedsPage
     data object Substances : MedsPage
     data class SubstanceForm(val id: String?) : MedsPage
-    data object Rules : MedsPage
-    data class RuleForm(val id: String?) : MedsPage
 }
 
 @Composable
@@ -105,29 +100,6 @@ fun MedsSettingsScreen(
                 }
             )
         }
-        is MedsPage.RuleForm -> Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .padding(LutealSpacing.md),
-            verticalArrangement = Arrangement.spacedBy(LutealSpacing.sm)
-        ) {
-            ScreenBack(onClick = navigateBack)
-            RuleForm(
-                rule = catalog.rules.find { it.id == shown.id },
-                substances = catalog.substances,
-                onSave = {
-                    viewModel.saveRule(it)
-                    current = MedsPage.Rules
-                },
-                onDelete = shown.id?.let { id ->
-                    {
-                        viewModel.deleteRule(id)
-                        current = MedsPage.Rules
-                    }
-                }
-            )
-        }
         else -> Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -151,18 +123,12 @@ fun MedsSettingsScreen(
                     onFollowupDelay = viewModel::setPainFollowupDelayMinutes,
                     onOpenMedication = { current = MedsPage.MedicationForm(it) },
                     onAddMedication = { current = MedsPage.MedicationForm(null) },
-                    onOpenSubstances = { current = MedsPage.Substances },
-                    onOpenRules = { current = MedsPage.Rules }
+                    onOpenSubstances = { current = MedsPage.Substances }
                 )
                 MedsPage.Substances -> SubstancesList(
                     catalog = catalog,
                     onOpenSubstance = { current = MedsPage.SubstanceForm(it) },
                     onAddSubstance = { current = MedsPage.SubstanceForm(null) }
-                )
-                MedsPage.Rules -> RulesList(
-                    catalog = catalog,
-                    onOpenRule = { current = MedsPage.RuleForm(it) },
-                    onAddRule = { current = MedsPage.RuleForm(null) }
                 )
             }
         }
@@ -184,8 +150,7 @@ private fun MedicationList(
     onFollowupDelay: (Int) -> Unit,
     onOpenMedication: (String) -> Unit,
     onAddMedication: () -> Unit,
-    onOpenSubstances: () -> Unit,
-    onOpenRules: () -> Unit
+    onOpenSubstances: () -> Unit
 ) {
     if (!seedOffered) {
         LutealCard {
@@ -231,11 +196,6 @@ private fun MedicationList(
         onClick = onOpenSubstances,
         modifier = Modifier.fillMaxWidth()
     )
-    LutealSecondaryButton(
-        text = stringResource(R.string.meds_rules),
-        onClick = onOpenRules,
-        modifier = Modifier.fillMaxWidth()
-    )
     var delay by rememberSaveable { mutableStateOf(followupDelay.toString()) }
     OutlinedTextField(
         value = delay,
@@ -259,9 +219,9 @@ private fun SubstancesList(
             modifier = Modifier.fillMaxWidth(),
             onClick = { onOpenSubstance(substance.id) }
         ) {
-            Text(substanceLabel(substance), style = MaterialTheme.typography.titleMedium)
+            Text(substance.name, style = MaterialTheme.typography.titleMedium)
             Text(
-                drugClassLabel(substance.drugClass),
+                substanceLimitsSummary(substance),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 style = MaterialTheme.typography.bodySmall
             )
@@ -275,24 +235,15 @@ private fun SubstancesList(
 }
 
 @Composable
-private fun RulesList(
-    catalog: MedicationCatalog,
-    onOpenRule: (String) -> Unit,
-    onAddRule: () -> Unit
-) {
-    catalog.rules.forEach { rule ->
-        LutealCard(
-            modifier = Modifier.fillMaxWidth(),
-            onClick = { onOpenRule(rule.id) }
-        ) {
-            Text(rule.message, style = MaterialTheme.typography.bodyMedium)
-        }
+private fun substanceLimitsSummary(substance: Substance): String {
+    val parts = mutableListOf<String>()
+    val periodMax = substance.maxPerIntakeMg
+    val hours = substance.minIntervalMinutes?.let { (it / 60.0).roundToInt() }
+    if (periodMax != null && hours != null) {
+        parts += stringResource(R.string.meds_substance_limit_period, periodMax, hours)
     }
-    LutealPrimaryButton(
-        text = stringResource(R.string.meds_add_rule),
-        onClick = onAddRule,
-        modifier = Modifier.fillMaxWidth()
-    )
+    substance.maxDailyMg?.let { parts += stringResource(R.string.meds_substance_limit_daily, it) }
+    return parts.joinToString(" · ").ifBlank { stringResource(R.string.meds_substance_no_limits) }
 }
 
 @Composable
@@ -305,6 +256,7 @@ private fun MedicationForm(
     var name by rememberSaveable { mutableStateOf(medication?.name.orEmpty()) }
     val storedForm = medication?.form.orEmpty()
     val legacyContraindications = medication?.contraindications.orEmpty()
+    var repeatHours by rememberSaveable { mutableStateOf(medication?.repeatEveryHours?.toString().orEmpty()) }
     var archived by rememberSaveable { mutableStateOf(medication?.archived ?: false) }
     var confirmArchive by rememberSaveable { mutableStateOf(false) }
     var rows by remember {
@@ -331,7 +283,8 @@ private fun MedicationForm(
                     contraindications = legacyContraindications,
                     archived = archived,
                     compositions = compositions,
-                    contraindicatedSubstanceIds = contraindicatedIds.toList()
+                    contraindicatedSubstanceIds = contraindicatedIds.toList(),
+                    repeatEveryHours = repeatHours.toIntOrNull()?.takeIf { it > 0 }
                 )
             )
         }
@@ -350,14 +303,19 @@ private fun MedicationForm(
                 label = { Text(stringResource(R.string.meds_name)) },
                 modifier = Modifier.fillMaxWidth()
             )
+            OutlinedTextField(
+                value = repeatHours,
+                onValueChange = { repeatHours = it.filter { ch -> ch.isDigit() } },
+                label = { Text(stringResource(R.string.meds_repeat_every_hours)) },
+                modifier = Modifier.fillMaxWidth()
+            )
             MedsSectionTitle(stringResource(R.string.meds_section_composition))
             rows.forEachIndexed { index, row ->
-                val substanceOptions = substances.map { it.id to it.name }
                 SettingsDropdownField(
                     label = stringResource(R.string.meds_substances),
                     selectedLabel = substances.find { it.id == row.first }?.name
                         ?: stringResource(R.string.meds_substances),
-                    options = substanceOptions,
+                    options = substances.map { it.id to it.name },
                     onSelect = { picked ->
                         rows = rows.toMutableList().also { it[index] = picked to row.second }
                     }
@@ -464,164 +422,55 @@ private fun MedicationForm(
 @Composable
 private fun SubstanceForm(substance: Substance?, onSave: (Substance) -> Unit) {
     var name by rememberSaveable { mutableStateOf(substance?.name.orEmpty()) }
-    var drugClass by rememberSaveable { mutableStateOf(substance?.drugClass ?: DrugClass.OTHER) }
+    var maxPeriod by rememberSaveable { mutableStateOf(substance?.maxPerIntakeMg?.toString().orEmpty()) }
+    var everyHours by rememberSaveable {
+        mutableStateOf(
+            substance?.minIntervalMinutes?.let { (it / 60.0).roundToInt().toString() }.orEmpty()
+        )
+    }
     var maxDaily by rememberSaveable { mutableStateOf(substance?.maxDailyMg?.toString().orEmpty()) }
-    var maxIntake by rememberSaveable { mutableStateOf(substance?.maxPerIntakeMg?.toString().orEmpty()) }
-    var interval by rememberSaveable { mutableStateOf(substance?.minIntervalMinutes?.toString().orEmpty()) }
-    var validated by rememberSaveable { mutableStateOf(substance?.validated ?: false) }
-    var notes by rememberSaveable { mutableStateOf(substance?.notes.orEmpty()) }
-    val classOptions = DrugClass.entries.map { it.name to drugClassLabel(it) }
     OutlinedTextField(
         value = name,
         onValueChange = { name = it },
         label = { Text(stringResource(R.string.meds_name)) },
         modifier = Modifier.fillMaxWidth()
     )
-    SettingsDropdownField(
-        label = stringResource(R.string.meds_target_class),
-        selectedLabel = drugClassLabel(drugClass),
-        options = classOptions,
-        onSelect = { picked -> drugClass = DrugClass.valueOf(picked) }
+    OutlinedTextField(
+        value = maxPeriod,
+        onValueChange = { maxPeriod = it },
+        label = { Text(stringResource(R.string.meds_max_period)) },
+        modifier = Modifier.fillMaxWidth()
     )
-    OutlinedTextField(maxDaily, { maxDaily = it }, label = { Text(stringResource(R.string.meds_max_daily)) }, modifier = Modifier.fillMaxWidth())
-    OutlinedTextField(maxIntake, { maxIntake = it }, label = { Text(stringResource(R.string.meds_max_intake)) }, modifier = Modifier.fillMaxWidth())
-    OutlinedTextField(interval, { interval = it }, label = { Text(stringResource(R.string.meds_interval)) }, modifier = Modifier.fillMaxWidth())
-    OutlinedTextField(notes, { notes = it }, label = { Text(stringResource(R.string.meds_notes)) }, modifier = Modifier.fillMaxWidth())
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        Text(stringResource(R.string.meds_validated))
-        Switch(checked = validated, onCheckedChange = { validated = it })
-    }
+    OutlinedTextField(
+        value = everyHours,
+        onValueChange = { everyHours = it.filter { ch -> ch.isDigit() } },
+        label = { Text(stringResource(R.string.meds_every_hours)) },
+        modifier = Modifier.fillMaxWidth()
+    )
+    OutlinedTextField(
+        value = maxDaily,
+        onValueChange = { maxDaily = it },
+        label = { Text(stringResource(R.string.meds_max_daily)) },
+        modifier = Modifier.fillMaxWidth()
+    )
     LutealPrimaryButton(
         text = stringResource(R.string.meds_save),
         onClick = {
             if (name.isBlank()) return@LutealPrimaryButton
+            val hours = everyHours.toIntOrNull()
             onSave(
                 Substance(
                     id = substance?.id ?: UUID.randomUUID().toString(),
                     name = name,
-                    drugClass = drugClass,
+                    drugClass = substance?.drugClass ?: DrugClass.OTHER,
                     maxDailyMg = maxDaily.replace(',', '.').toDoubleOrNull(),
-                    maxPerIntakeMg = maxIntake.replace(',', '.').toDoubleOrNull(),
-                    minIntervalMinutes = interval.toIntOrNull(),
-                    validated = validated,
-                    notes = notes
+                    maxPerIntakeMg = maxPeriod.replace(',', '.').toDoubleOrNull(),
+                    minIntervalMinutes = hours?.takeIf { it > 0 }?.times(60),
+                    validated = substance?.validated ?: true,
+                    notes = substance?.notes.orEmpty()
                 )
             )
         },
         modifier = Modifier.fillMaxWidth()
     )
-}
-
-@Composable
-private fun RuleForm(
-    rule: InteractionRule?,
-    substances: List<Substance>,
-    onSave: (InteractionRule) -> Unit,
-    onDelete: (() -> Unit)?
-) {
-    var typeA by rememberSaveable { mutableStateOf(rule?.targetAType ?: InteractionTargetType.CLASS) }
-    var idA by rememberSaveable { mutableStateOf(rule?.targetAId.orEmpty()) }
-    var typeB by rememberSaveable { mutableStateOf(rule?.targetBType ?: InteractionTargetType.CLASS) }
-    var idB by rememberSaveable { mutableStateOf(rule?.targetBId.orEmpty()) }
-    var severity by rememberSaveable { mutableStateOf(rule?.severity ?: AlertSeverity.WARNING) }
-    var message by rememberSaveable { mutableStateOf(rule?.message.orEmpty()) }
-    TargetPicker(typeA, idA, substances, { typeA = it }, { idA = it })
-    TargetPicker(typeB, idB, substances, { typeB = it }, { idB = it })
-    SettingsDropdownField(
-        label = stringResource(R.string.meds_severity),
-        selectedLabel = when (severity) {
-            AlertSeverity.WARNING -> stringResource(R.string.meds_severity_warning)
-            AlertSeverity.DANGER -> stringResource(R.string.meds_severity_danger)
-        },
-        options = listOf(
-            AlertSeverity.WARNING.name to stringResource(R.string.meds_severity_warning),
-            AlertSeverity.DANGER.name to stringResource(R.string.meds_severity_danger)
-        ),
-        onSelect = { severity = AlertSeverity.valueOf(it) }
-    )
-    OutlinedTextField(
-        value = message,
-        onValueChange = { message = it },
-        label = { Text(stringResource(R.string.meds_rule_message)) },
-        modifier = Modifier.fillMaxWidth()
-    )
-    LutealPrimaryButton(
-        text = stringResource(R.string.meds_save),
-        onClick = {
-            if (message.isBlank() || idA.isBlank() || idB.isBlank()) return@LutealPrimaryButton
-            onSave(
-                InteractionRule(
-                    id = rule?.id ?: UUID.randomUUID().toString(),
-                    targetAType = typeA,
-                    targetAId = idA,
-                    targetBType = typeB,
-                    targetBId = idB,
-                    severity = severity,
-                    message = message
-                )
-            )
-        },
-        modifier = Modifier.fillMaxWidth()
-    )
-    if (onDelete != null) {
-        LutealSecondaryButton(
-            text = stringResource(R.string.meds_delete),
-            onClick = onDelete,
-            modifier = Modifier.fillMaxWidth()
-        )
-    }
-}
-
-@Composable
-private fun TargetPicker(
-    type: InteractionTargetType,
-    id: String,
-    substances: List<Substance>,
-    onType: (InteractionTargetType) -> Unit,
-    onId: (String) -> Unit
-) {
-    SettingsDropdownField(
-        label = stringResource(R.string.meds_target_substance),
-        selectedLabel = when (type) {
-            InteractionTargetType.SUBSTANCE -> stringResource(R.string.meds_target_substance)
-            InteractionTargetType.CLASS -> stringResource(R.string.meds_target_class)
-        },
-        options = listOf(
-            InteractionTargetType.SUBSTANCE.name to stringResource(R.string.meds_target_substance),
-            InteractionTargetType.CLASS.name to stringResource(R.string.meds_target_class)
-        ),
-        onSelect = { onType(InteractionTargetType.valueOf(it)) }
-    )
-    val options = if (type == InteractionTargetType.SUBSTANCE) {
-        substances.map { it.id to it.name }
-    } else {
-        DrugClass.entries.map { it.name to drugClassLabel(it) }
-    }
-    SettingsDropdownField(
-        label = if (type == InteractionTargetType.SUBSTANCE) {
-            stringResource(R.string.meds_substances)
-        } else {
-            stringResource(R.string.meds_target_class)
-        },
-        selectedLabel = options.find { it.first == id }?.second ?: "",
-        options = options,
-        onSelect = onId
-    )
-}
-
-@Composable
-private fun substanceLabel(substance: Substance): String {
-    val badge = if (substance.validated) "" else " · ${stringResource(R.string.meds_to_validate)}"
-    return substance.name + badge
-}
-
-@Composable
-private fun drugClassLabel(drugClass: DrugClass): String = when (drugClass) {
-    DrugClass.PARACETAMOL -> stringResource(R.string.drug_class_paracetamol)
-    DrugClass.NSAID -> stringResource(R.string.drug_class_nsaid)
-    DrugClass.OPIOID -> stringResource(R.string.drug_class_opioid)
-    DrugClass.ANTISPASMODIC -> stringResource(R.string.drug_class_antispasmodic)
-    DrugClass.TRIPTAN -> stringResource(R.string.drug_class_triptan)
-    DrugClass.HORMONAL -> stringResource(R.string.drug_class_hormonal)
-    DrugClass.OTHER -> stringResource(R.string.drug_class_other)
 }
