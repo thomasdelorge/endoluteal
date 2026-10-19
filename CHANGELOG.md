@@ -18,6 +18,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Récap du jour, étape Douleurs : section « Événements du jour » retirée (carte du corps et échelles 5D inchangées).
 - Récap du jour, étape Général : alcool et impact sur la journée en menus déroulants.
 - Récap du jour : « Modifier » ouvre l’assistant à la première étape (Cycle).
+- Récap du jour, étape Cycle : phase, saignements et pertes en menus déroulants (une saisie par champ).
+- Récap du jour, étape Douleurs : carte du corps puis échelles 5D et notes (deux écrans, Continuer entre les deux).
 
 ## [0.11.3] - 2026-10-19
 

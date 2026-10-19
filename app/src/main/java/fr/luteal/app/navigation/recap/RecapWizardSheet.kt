@@ -21,6 +21,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -63,7 +64,9 @@ fun RecapWizardSheet(
     val pagerState = rememberPagerState(pageCount = { steps.size })
     val scope = rememberCoroutineScope()
     var saveCurrentStep by remember { mutableStateOf<(() -> Unit)?>(null) }
+    var painSubPage by remember { mutableIntStateOf(0) }
     val activePage = pagerState.settledPage
+    val currentStep = steps.getOrNull(activePage)
 
     LaunchedEffect(recap?.date, startAtFirstPage) {
         val loaded = recap ?: return@LaunchedEffect
@@ -75,6 +78,9 @@ fun RecapWizardSheet(
 
     LaunchedEffect(activePage) {
         saveCurrentStep = null
+        if (steps.getOrNull(activePage) != RecapStep.PAIN) {
+            painSubPage = 0
+        }
     }
 
     fun advanceFrom(page: Int) {
@@ -138,9 +144,12 @@ fun RecapWizardSheet(
                         RecapStep.PAIN -> PainStep(
                             hideDyspareunia = hideDyspareunia,
                             initial = currentRecap.pain,
+                            subPage = if (stepActive) painSubPage else 0,
+                            onSubPageChange = { painSubPage = it },
                             active = stepActive,
                             onBindSave = { saveCurrentStep = it },
                             onContinue = { payload ->
+                                painSubPage = 0
                                 viewModel.finishPainStep(payload) { advanceFrom(page) }
                             }
                         )
@@ -178,11 +187,19 @@ fun RecapWizardSheet(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
             ) {
-                if (currentRecap != null && pagerState.currentPage > 0) {
+                val showPrevious = currentRecap != null && (
+                    pagerState.currentPage > 0 ||
+                        (currentStep == RecapStep.PAIN && painSubPage > 0)
+                )
+                if (showPrevious) {
                     TextButton(
                         onClick = {
-                            scope.launch {
-                                pagerState.animateScrollToPage(pagerState.currentPage - 1)
+                            if (currentStep == RecapStep.PAIN && painSubPage > 0) {
+                                painSubPage -= 1
+                            } else {
+                                scope.launch {
+                                    pagerState.animateScrollToPage(pagerState.currentPage - 1)
+                                }
                             }
                         },
                         modifier = Modifier.testTag("recap_previous")

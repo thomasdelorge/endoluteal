@@ -2,10 +2,6 @@ package fr.luteal.app.navigation.recap.steps
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -14,19 +10,32 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import fr.luteal.app.R
 import fr.luteal.app.navigation.recap.RecapCycleUiState
+import fr.luteal.core.designsystem.component.SettingsDropdownField
 import fr.luteal.core.designsystem.theme.LutealSpacing
 import fr.luteal.core.model.BleedingIntensity
 import fr.luteal.core.model.CervicalMucusTexture
 import fr.luteal.core.model.CyclePhase
 import fr.luteal.core.model.CurrentCyclePhase
-import fr.luteal.core.model.PhaseCertainty
 import fr.luteal.core.model.recap.RecapCyclePayload
 
-@OptIn(ExperimentalLayoutApi::class)
+internal const val RECAP_BLEEDING_NONE = "NONE"
+internal const val RECAP_MUCUS_NONE = "NONE"
+
+internal fun bleedingDropdownId(hasBleeding: Boolean, intensity: String): String =
+    if (!hasBleeding) RECAP_BLEEDING_NONE else intensity.ifBlank { BleedingIntensity.LIGHT.name }
+
+internal fun applyBleedingDropdown(id: String): Pair<Boolean, String> =
+    if (id == RECAP_BLEEDING_NONE) false to "" else true to id
+
+internal fun mucusDropdownId(hasMucus: Boolean, texture: String): String =
+    if (!hasMucus) RECAP_MUCUS_NONE else texture.ifBlank { CervicalMucusTexture.STICKY.name }
+
+internal fun applyMucusDropdown(id: String): Pair<Boolean, String> =
+    if (id == RECAP_MUCUS_NONE) false to "" else true to id
+
 @Composable
 fun CycleStep(
     ui: RecapCycleUiState?,
@@ -36,31 +45,32 @@ fun CycleStep(
     onBindSave: (() -> Unit) -> Unit = {}
 ) {
     val estimated = ui?.estimatedPhase
-    var phaseOverride by remember(initial) {
-        mutableStateOf(initial.phaseOverride.ifBlank { estimated?.name ?: "" })
-    }
     var acceptEstimate by remember(initial) { mutableStateOf(initial.acceptEstimatedPhase) }
-    var hasBleeding by remember(initial) { mutableStateOf(initial.hasBleeding) }
-    var bleeding by remember(initial) {
-        mutableStateOf(initial.bleedingIntensity.ifBlank { BleedingIntensity.LIGHT.name })
+    var phaseOverride by remember(initial) {
+        mutableStateOf(
+            when {
+                initial.acceptEstimatedPhase -> {
+                    estimated?.name ?: initial.phaseOverride.ifBlank { CyclePhase.FOLLICULAR.name }
+                }
+                else -> initial.phaseOverride.ifBlank { estimated?.name ?: CyclePhase.FOLLICULAR.name }
+            }
+        )
     }
-    var hasMucus by remember(initial) { mutableStateOf(initial.hasCervicalMucus) }
-    var mucus by remember(initial) {
-        mutableStateOf(initial.mucusTexture.ifBlank { CervicalMucusTexture.STICKY.name })
+    var bleedingChoice by remember(initial) {
+        mutableStateOf(bleedingDropdownId(initial.hasBleeding, initial.bleedingIntensity))
+    }
+    var mucusChoice by remember(initial) {
+        mutableStateOf(mucusDropdownId(initial.hasCervicalMucus, initial.mucusTexture))
     }
 
-    LaunchedEffect(
-        phaseOverride,
-        acceptEstimate,
-        hasBleeding,
-        bleeding,
-        hasMucus,
-        mucus,
-        active
-    ) {
+    LaunchedEffect(phaseOverride, acceptEstimate, bleedingChoice, mucusChoice, active) {
         if (!active) return@LaunchedEffect
+        val (hasBleeding, bleeding) = applyBleedingDropdown(bleedingChoice)
+        val (hasMucus, mucus) = applyMucusDropdown(mucusChoice)
         onBindSave {
-            onContinue(buildRecapCyclePayload(phaseOverride, acceptEstimate, hasBleeding, bleeding, hasMucus, mucus))
+            onContinue(
+                buildRecapCyclePayload(phaseOverride, acceptEstimate, hasBleeding, bleeding, hasMucus, mucus)
+            )
         }
     }
 
@@ -76,58 +86,27 @@ fun CycleStep(
             stringResource(R.string.recap_phase_recorded_note)
         }
         Text("$phaseLabel · $estimateNote", style = MaterialTheme.typography.bodyMedium)
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(LutealSpacing.xs)) {
-            CyclePhase.entries.forEach { phase ->
-                FilterChip(
-                    selected = phaseOverride == phase.name,
-                    onClick = {
-                        phaseOverride = phase.name
-                        acceptEstimate = false
-                    },
-                    label = { Text(phaseLabel(phase)) }
-                )
+        SettingsDropdownField(
+            label = stringResource(R.string.recap_cycle_phase_label),
+            selectedLabel = phaseLabel(selectedCyclePhase(phaseOverride)),
+            options = CyclePhase.entries.map { it.name to phaseLabel(it) },
+            onSelect = { picked ->
+                phaseOverride = picked
+                acceptEstimate = false
             }
-        }
-        Text(stringResource(R.string.recap_bleeding_question))
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(LutealSpacing.xs)) {
-            FilterChip(selected = !hasBleeding, onClick = { hasBleeding = false }, label = { Text(stringResource(R.string.recap_no)) })
-            FilterChip(selected = hasBleeding, onClick = { hasBleeding = true }, label = { Text(stringResource(R.string.recap_yes)) })
-        }
-        if (hasBleeding) {
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(LutealSpacing.xs)) {
-                listOf(BleedingIntensity.LIGHT, BleedingIntensity.MEDIUM, BleedingIntensity.HEAVY, BleedingIntensity.SPOTTING).forEach { intensity ->
-                    FilterChip(
-                        selected = bleeding == intensity.name,
-                        onClick = { bleeding = intensity.name },
-                        label = { Text(bleedingLabel(intensity)) }
-                    )
-                }
-            }
-        }
-        Text(stringResource(R.string.recap_mucus_question))
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(LutealSpacing.xs)) {
-            FilterChip(selected = !hasMucus, onClick = { hasMucus = false }, label = { Text(stringResource(R.string.recap_no)) })
-            FilterChip(selected = hasMucus, onClick = { hasMucus = true }, label = { Text(stringResource(R.string.recap_yes)) })
-        }
-        if (hasMucus) {
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(LutealSpacing.xs)) {
-                FilterChip(
-                    selected = mucus == CervicalMucusTexture.STICKY.name,
-                    onClick = { mucus = CervicalMucusTexture.STICKY.name },
-                    label = { Text(stringResource(R.string.recap_mucus_sticky)) }
-                )
-                FilterChip(
-                    selected = mucus == CervicalMucusTexture.CREAMY.name,
-                    onClick = { mucus = CervicalMucusTexture.CREAMY.name },
-                    label = { Text(stringResource(R.string.recap_mucus_creamy)) }
-                )
-                FilterChip(
-                    selected = mucus == CervicalMucusTexture.EGG_WHITE.name,
-                    onClick = { mucus = CervicalMucusTexture.EGG_WHITE.name },
-                    label = { Text(stringResource(R.string.recap_mucus_egg_white)) }
-                )
-            }
-        }
+        )
+        SettingsDropdownField(
+            label = stringResource(R.string.recap_bleeding_question),
+            selectedLabel = bleedingDropdownLabel(bleedingChoice),
+            options = recapBleedingDropdownOptions(),
+            onSelect = { bleedingChoice = it }
+        )
+        SettingsDropdownField(
+            label = stringResource(R.string.recap_mucus_question),
+            selectedLabel = mucusDropdownLabel(mucusChoice),
+            options = recapMucusDropdownOptions(),
+            onSelect = { mucusChoice = it }
+        )
     }
 }
 
@@ -148,18 +127,41 @@ internal fun buildRecapCyclePayload(
 )
 
 @Composable
+private fun recapBleedingDropdownOptions(): List<Pair<String, String>> = listOf(
+    RECAP_BLEEDING_NONE to stringResource(R.string.recap_bleeding_none),
+    BleedingIntensity.SPOTTING.name to stringResource(R.string.recap_bleeding_yes_spotting),
+    BleedingIntensity.LIGHT.name to stringResource(R.string.recap_bleeding_yes_light),
+    BleedingIntensity.MEDIUM.name to stringResource(R.string.recap_bleeding_yes_medium),
+    BleedingIntensity.HEAVY.name to stringResource(R.string.recap_bleeding_yes_heavy)
+)
+
+@Composable
+private fun recapMucusDropdownOptions(): List<Pair<String, String>> = listOf(
+    RECAP_MUCUS_NONE to stringResource(R.string.recap_mucus_none),
+    CervicalMucusTexture.STICKY.name to stringResource(R.string.recap_mucus_yes_sticky),
+    CervicalMucusTexture.CREAMY.name to stringResource(R.string.recap_mucus_yes_creamy),
+    CervicalMucusTexture.EGG_WHITE.name to stringResource(R.string.recap_mucus_yes_egg_white)
+)
+
+@Composable
+private fun bleedingDropdownLabel(id: String): String = recapBleedingDropdownOptions()
+    .firstOrNull { it.first == id }
+    ?.second
+    ?: stringResource(R.string.recap_bleeding_none)
+
+@Composable
+private fun mucusDropdownLabel(id: String): String = recapMucusDropdownOptions()
+    .firstOrNull { it.first == id }
+    ?.second
+    ?: stringResource(R.string.recap_mucus_none)
+
+private fun selectedCyclePhase(phaseKey: String): CyclePhase =
+    runCatching { CyclePhase.valueOf(phaseKey) }.getOrElse { CyclePhase.FOLLICULAR }
+
+@Composable
 private fun phaseLabel(phase: CyclePhase): String = when (phase) {
     CyclePhase.MENSTRUAL -> stringResource(R.string.phase_menstrual)
     CyclePhase.FOLLICULAR -> stringResource(R.string.phase_follicular)
     CyclePhase.OVULATORY -> stringResource(R.string.phase_ovulatory)
     CyclePhase.LUTEAL -> stringResource(R.string.phase_luteal)
-}
-
-@Composable
-private fun bleedingLabel(intensity: BleedingIntensity): String = when (intensity) {
-    BleedingIntensity.SPOTTING -> stringResource(R.string.bleeding_spotting)
-    BleedingIntensity.LIGHT -> stringResource(R.string.bleeding_light)
-    BleedingIntensity.MEDIUM -> stringResource(R.string.bleeding_medium)
-    BleedingIntensity.HEAVY -> stringResource(R.string.bleeding_heavy)
-    BleedingIntensity.NONE -> stringResource(R.string.bleeding_none)
 }

@@ -1,6 +1,12 @@
 package fr.luteal.app.navigation.recap
 
+import fr.luteal.app.navigation.recap.steps.applyBleedingDropdown
+import fr.luteal.app.navigation.recap.steps.applyMucusDropdown
+import fr.luteal.app.navigation.recap.steps.bleedingDropdownId
 import fr.luteal.app.navigation.recap.steps.buildRecapCyclePayload
+import fr.luteal.app.navigation.recap.steps.mucusDropdownId
+import fr.luteal.app.navigation.recap.steps.RECAP_BLEEDING_NONE
+import fr.luteal.app.navigation.recap.steps.RECAP_MUCUS_NONE
 import fr.luteal.core.model.BleedingIntensity
 import fr.luteal.core.model.CervicalMucusTexture
 import org.junit.Assert.assertEquals
@@ -36,5 +42,21 @@ class CycleStepPayloadTest {
         assertEquals("MENSTRUAL", payload.phaseOverride)
         assertEquals(BleedingIntensity.HEAVY.name, payload.bleedingIntensity)
         assertEquals(CervicalMucusTexture.CREAMY.name, payload.mucusTexture)
+    }
+
+    @Test
+    fun bleedingDropdownMapsNoneAndIntensities() {
+        assertEquals(RECAP_BLEEDING_NONE, bleedingDropdownId(hasBleeding = false, intensity = ""))
+        assertEquals(BleedingIntensity.LIGHT.name, bleedingDropdownId(hasBleeding = true, intensity = "LIGHT"))
+        assertEquals(false, applyBleedingDropdown(RECAP_BLEEDING_NONE).first)
+        assertEquals(BleedingIntensity.MEDIUM.name, applyBleedingDropdown(BleedingIntensity.MEDIUM.name).second)
+    }
+
+    @Test
+    fun mucusDropdownMapsNoneAndTextures() {
+        assertEquals(RECAP_MUCUS_NONE, mucusDropdownId(hasMucus = false, texture = ""))
+        assertEquals(CervicalMucusTexture.EGG_WHITE.name, mucusDropdownId(hasMucus = true, texture = "EGG_WHITE"))
+        assertEquals(false, applyMucusDropdown(RECAP_MUCUS_NONE).first)
+        assertEquals(CervicalMucusTexture.STICKY.name, applyMucusDropdown(CervicalMucusTexture.STICKY.name).second)
     }
 }
