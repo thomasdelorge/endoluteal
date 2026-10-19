@@ -15,6 +15,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.semantics
@@ -28,6 +29,8 @@ private val PainRed = Color(0xFFC62828)
 
 fun painIntensityColor(intensity: Int): Color =
     lerp(PainGreen, PainRed, intensity.coerceIn(0, 10) / 10f)
+
+fun painIntensityArgb(intensity: Int): Int = painIntensityColor(intensity).toArgb()
 
 @StringRes
 private fun painHintRes(level: Int): Int = when (level.coerceIn(0, 10)) {

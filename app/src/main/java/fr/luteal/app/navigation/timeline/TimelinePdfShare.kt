@@ -2,11 +2,11 @@ package fr.luteal.app.navigation.timeline
 
 import android.content.Context
 import android.net.Uri
-import fr.luteal.core.data.report.TimelinePdfBuilder
-import fr.luteal.core.model.report.TimelinePdfContent
+import fr.luteal.core.data.report.SynthesisPdfBuilder
+import fr.luteal.core.model.report.ClinicalSynthesis
 
-fun writeTimelinePdf(context: Context, uri: Uri, content: TimelinePdfContent) {
+fun writeSynthesisPdf(context: Context, uri: Uri, synthesis: ClinicalSynthesis) {
     context.contentResolver.openOutputStream(uri)?.use { stream ->
-        TimelinePdfBuilder.write(content, stream)
+        SynthesisPdfBuilder.write(context, synthesis, stream)
     }
 }

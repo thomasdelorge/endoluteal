@@ -502,8 +502,7 @@ private fun zoneLabel(zone: BodyZone, intensity: Int?): String {
     return if (intensity == null) name else "$name ($intensity)"
 }
 
-private fun List<PainMark>.zoneHeat(): Map<String, Int> =
-    groupBy { it.zone }.mapValues { (_, marks) -> marks.maxOf { it.intensity } }
+private fun List<PainMark>.zoneHeat(): Map<String, Int> = PainHeatmap.zoneIntensityMax(this)
 
 private fun List<PainMark>.zoneMark(zone: String): PainMark? =
     firstOrNull { it.zone == zone && !it.isPin }

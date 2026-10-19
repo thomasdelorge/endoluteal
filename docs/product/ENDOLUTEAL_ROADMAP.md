@@ -1199,6 +1199,7 @@ Le praticien veut un document, pas l'app. `PdfReportBuilder` existe déjà pour 
 
 **Objectif**
 - Export PDF depuis la frise, avec les filtres actifs ou tout l'historique : frise des RDV et hospitalisations, état des lieux [T1], courbe de douleur, consommation de médicaments, heatmap.
+- Livré (app 0.11.x+) : `SynthesisPdfBuilder` depuis la frise — synthèse récap (tendances, heatmap CHOIR, traitements), sections au choix, période « depuis le dernier RDV » ; partage via sélecteur de fichier existant.
 - Partage via `FileProvider` + `ACTION_SEND` (mail ou autre app), sans permission réseau.
 - Retrait du rapport HTML s'il n'est plus utilisé.
 

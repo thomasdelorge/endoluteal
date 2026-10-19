@@ -14,26 +14,19 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import fr.luteal.app.R
-import fr.luteal.core.data.local.MedicationIntakeRow
 import fr.luteal.core.data.repository.DailyRecapRepository
 import fr.luteal.core.data.repository.JournalEventRepository
 import fr.luteal.core.data.repository.MedicationIntakeRepository
 import fr.luteal.core.data.repository.MedicationRepository
 import fr.luteal.core.designsystem.component.LutealCard
 import fr.luteal.core.model.CyclePhase
-import fr.luteal.core.model.EventPayload
-import fr.luteal.core.model.JournalEvent
-import fr.luteal.core.model.JournalEventType
-import fr.luteal.core.model.meds.Medication
-import fr.luteal.core.model.recap.DailyRecap
 import fr.luteal.core.model.report.BandEffect
 import fr.luteal.core.model.report.LevelBand
 import fr.luteal.core.model.report.PhaseEffect
 import fr.luteal.core.model.report.TreatmentEffectAggregator
 import fr.luteal.core.model.report.TreatmentEffectRow
 import fr.luteal.core.model.report.TreatmentEffectSummary
-import fr.luteal.core.model.report.TreatmentKind
-import fr.luteal.core.model.report.TreatmentUse
+import fr.luteal.core.model.report.buildTreatmentUses
 import java.time.Instant
 import java.time.ZoneId
 import javax.inject.Inject
@@ -56,7 +49,15 @@ class TreatmentEffectViewModel @Inject constructor(
         recapRepository.observeAll()
     ) { events, intakes, catalog, recaps ->
         TreatmentEffectAggregator.summarize(
-            toUses(events, intakes, catalog.medications, recaps, ZoneId.systemDefault())
+            buildTreatmentUses(
+                events = events,
+                intakes = intakes,
+                medications = catalog.medications,
+                recaps = recaps,
+                zone = ZoneId.systemDefault(),
+                fromInclusive = Instant.EPOCH,
+                toInclusive = FAR_FUTURE
+            )
         )
     }.stateIn(
         viewModelScope,
@@ -66,58 +67,6 @@ class TreatmentEffectViewModel @Inject constructor(
 
     private companion object {
         val FAR_FUTURE: Instant = Instant.parse("2100-01-01T00:00:00Z")
-    }
-}
-
-internal fun toUses(
-    events: List<JournalEvent>,
-    intakes: List<MedicationIntakeRow>,
-    medications: List<Medication>,
-    recaps: List<DailyRecap>,
-    zone: ZoneId
-): List<TreatmentUse> {
-    val names = medications.associate { it.id to it.name }
-    val recapByDay = recaps.associateBy { it.date }
-    val checks = events.filter { it.type == JournalEventType.PAIN_CHECK }
-    val intakeByEvent = intakes.associateBy { it.eventId }
-    return events.mapNotNull { event ->
-        val day = event.startAt.atZone(zone).toLocalDate()
-        val recap = recapByDay[day]
-        val phase = recap?.cycle?.phaseOverride?.takeIf { it.isNotBlank() }
-        val sleep = recap?.general?.sleepQuality
-        val stress = recap?.general?.stress
-        val after = checks.filter { it.linkedEventId == event.id }.flatMap { it.marks.map { mark -> mark.intensity } }
-        when (event.type) {
-            JournalEventType.MEDICATION_INTAKE -> {
-                val intake = intakeByEvent[event.id] ?: return@mapNotNull null
-                TreatmentUse(
-                    kind = TreatmentKind.MEDICATION,
-                    key = intake.medicationId,
-                    name = names[intake.medicationId] ?: intake.medicationId,
-                    beforeMarks = event.marks.map { it.intensity },
-                    afterMarks = after,
-                    phase = phase,
-                    sleep = sleep,
-                    stress = stress
-                )
-            }
-            JournalEventType.CARE_SESSION -> {
-                val payload = event.payload as? EventPayload.CareSession ?: return@mapNotNull null
-                val name = payload.careTypeName.ifBlank { payload.programName }.ifBlank { "Soin" }
-                TreatmentUse(
-                    kind = TreatmentKind.CARE,
-                    key = payload.careTypeId.ifBlank { name },
-                    name = name,
-                    beforeMarks = event.marks.map { it.intensity },
-                    painBefore = payload.painBefore,
-                    afterMarks = after,
-                    phase = phase,
-                    sleep = sleep,
-                    stress = stress
-                )
-            }
-            else -> null
-        }
     }
 }
 

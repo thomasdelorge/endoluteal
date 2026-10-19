@@ -21,6 +21,12 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import fr.luteal.core.model.report.SynthesisPdfSection
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -48,11 +54,32 @@ fun TimelineScreen(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    var showExportDialog by remember { mutableStateOf(false) }
+    var pendingSections by remember { mutableStateOf<Set<SynthesisPdfSection>?>(null) }
     val exportPdf = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/pdf")) { uri ->
-        if (uri != null) writeTimelinePdf(context, uri, viewModel.pdfContent())
+        val sections = pendingSections
+        if (uri != null && sections != null) {
+            scope.launch {
+                val synthesis = viewModel.buildSynthesis(sections)
+                writeSynthesisPdf(context, uri, synthesis)
+                pendingSections = null
+            }
+        }
     }
     val dateFormat = DateTimeFormatter.ofPattern("dd-MM-yyyy")
     val zone = ZoneId.systemDefault()
+
+    if (showExportDialog) {
+        TimelineExportDialog(
+            onDismiss = { showExportDialog = false },
+            onExport = { sections ->
+                showExportDialog = false
+                pendingSections = sections
+                exportPdf.launch("synthese-endoluteal.pdf")
+            }
+        )
+    }
 
     state.selected?.let { visit ->
         AlertDialog(
@@ -112,7 +139,7 @@ fun TimelineScreen(
             )
             LutealPrimaryButton(
                 text = stringResource(R.string.timeline_export_pdf),
-                onClick = { exportPdf.launch("frise.pdf") },
+                onClick = { showExportDialog = true },
                 modifier = Modifier.fillMaxWidth()
             )
         }
@@ -178,11 +205,18 @@ fun TimelineScreen(
                 listOf(null to R.string.timeline_period_all, 30 to R.string.timeline_period_30, 90 to R.string.timeline_period_90, 365 to R.string.timeline_period_365)
                     .forEach { (days, label) ->
                         FilterChip(
-                            selected = state.filters.periodDays == days,
+                            selected = state.filters.periodDays == days && !state.filters.sinceLastVisit,
                             onClick = { viewModel.setPeriodDays(days) },
                             label = { Text(stringResource(label)) }
                         )
                     }
+                if (state.sinceLastVisitAvailable) {
+                    FilterChip(
+                        selected = state.filters.sinceLastVisit,
+                        onClick = { viewModel.setSinceLastVisit(!state.filters.sinceLastVisit) },
+                        label = { Text(stringResource(R.string.timeline_period_since_visit)) }
+                    )
+                }
             }
         }
         state.summary?.let { summary ->

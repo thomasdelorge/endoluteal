@@ -885,6 +885,17 @@
     <string name="timeline_period_30">30 jours</string>
     <string name="timeline_period_90">90 jours</string>
     <string name="timeline_period_365">1 an</string>
+    <string name="timeline_period_since_visit">Depuis le dernier RDV</string>
+    <string name="timeline_export_dialog_title">Exporter le PDF</string>
+    <string name="timeline_export_dialog_subtitle">Sections incluses (filtres de la frise appliqués).</string>
+    <string name="timeline_export_section_pain">Douleur et échelles 5D</string>
+    <string name="timeline_export_section_heatmap">Carte des douleurs</string>
+    <string name="timeline_export_section_psy">Psy</string>
+    <string name="timeline_export_section_general">Général</string>
+    <string name="timeline_export_section_bowel">Intestinal</string>
+    <string name="timeline_export_section_treatments">Médicaments et soins</string>
+    <string name="timeline_export_section_journal">Journal détaillé</string>
+    <string name="timeline_export_confirm">Générer le PDF</string>
     <string name="timeline_empty">Aucun événement pour ces filtres.</string>
     <string name="timeline_edit_appointment">Modifier</string>
     <string name="timeline_kind_appointment">Rendez-vous</string>
