@@ -1248,6 +1248,7 @@
     <string name="meds_alert_unvalidated">Basée sur des valeurs non validées.</string>
     <string name="agenda_hormonal_hidden">Prédiction masquée : traitement hormonal continu en cours.</string>
     <string name="meds_plans">Plans en cours</string>
+    <string name="meds_plans_empty">Aucun plan récurrent pour le moment.</string>
     <string name="meds_add_plan">Ajouter un plan</string>
     <string name="meds_recent">Prises récentes</string>
     <string name="meds_next_slot">Prochain horaire : %1$s</string>

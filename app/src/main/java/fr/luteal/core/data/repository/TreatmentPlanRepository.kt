@@ -15,6 +15,7 @@ interface TreatmentPlanRepository {
     fun observe(): Flow<List<TreatmentPlan>>
     suspend fun allOnce(): List<TreatmentPlan>
     suspend fun upsert(plan: TreatmentPlan)
+    suspend fun delete(id: String)
 }
 
 @Singleton
@@ -31,6 +32,10 @@ class TreatmentPlanRepositoryImpl @Inject constructor(
         require(plan.timesOfDay.isNotEmpty()) { "A plan needs at least one time" }
         require(plan.unitsPerDose > 0.0) { "Units per dose must be positive" }
         treatmentPlanDao.upsert(plan.toEntity())
+    }
+
+    override suspend fun delete(id: String) {
+        treatmentPlanDao.delete(id)
     }
 }
 

@@ -16,7 +16,6 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.LocalTime
 import java.time.ZoneId
-import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -80,20 +79,16 @@ class MedsViewModel @Inject constructor(
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), MedsUi())
 
-    fun savePlan(medicationId: String, units: Double, times: List<LocalTime>, start: LocalDate, end: LocalDate?, hormonal: Boolean) {
+    fun upsertPlan(plan: TreatmentPlan) {
         viewModelScope.launch {
-            treatmentPlanRepository.upsert(
-                TreatmentPlan(
-                    id = UUID.randomUUID().toString(),
-                    medicationId = medicationId,
-                    unitsPerDose = units,
-                    timesOfDay = times,
-                    startDate = start,
-                    endDate = end,
-                    active = true,
-                    continuousHormonal = hormonal
-                )
-            )
+            treatmentPlanRepository.upsert(plan)
+            treatmentPlanScheduler.sync()
+        }
+    }
+
+    fun deletePlan(planId: String) {
+        viewModelScope.launch {
+            treatmentPlanRepository.delete(planId)
             treatmentPlanScheduler.sync()
         }
     }

@@ -18,6 +18,9 @@ interface TreatmentPlanDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(entity: TreatmentPlanEntity)
 
+    @Query("DELETE FROM treatment_plans WHERE id = :id")
+    suspend fun delete(id: String)
+
     @Query("DELETE FROM treatment_plans")
     suspend fun deleteAll()
 }

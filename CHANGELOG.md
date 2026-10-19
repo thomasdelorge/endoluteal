@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Médicaments : catalogue en tuiles, sections et menus déroulants ; contre-indications par substance ; prises récentes limitées à 24 h ; prises de l’agenda préfixées par 💊 ; export frise avec nombre de prises par jour et par médicament.
 - Aide à la prise : limites par substance (mg sur une période en heures), rappel par médicament, écran incompatibilités et classes retirés de l’UI ; tuiles de prises récentes simplifiées.
+- Plans récurrents (réglages) : liste en tuiles, édition au clic, suppression en édition, boutons à la place des liens.
 
 ## [0.11.3] - 2026-10-19
 
