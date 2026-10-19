@@ -7,9 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.12.0] - 2026-10-19
+
 ### Added
 
 - Frise : export PDF de synthèse pour le médecin (tendances récap, heatmap des douleurs, efficacité des traitements, journal filtré), avec choix des sections et période « depuis le dernier RDV ».
+- Développement : jeu de données démo sur émulateur (`make dev-seed` / `make demo-backup`).
 
 ### Changed
 
