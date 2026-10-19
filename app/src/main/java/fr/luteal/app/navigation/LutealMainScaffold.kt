@@ -108,6 +108,7 @@ fun LutealMainScaffold(
     var appointmentDate by remember { mutableStateOf<LocalDate?>(null) }
     var appointmentEventId by remember { mutableStateOf<String?>(null) }
     var recapDate by remember { mutableStateOf<LocalDate?>(null) }
+    var recapStartAtFirstPage by remember { mutableStateOf(false) }
     var monthlyPeriod by remember { mutableStateOf<java.time.YearMonth?>(null) }
     var appointmentReportEventId by remember { mutableStateOf<String?>(null) }
     var showBackfillDialog by remember { mutableStateOf(false) }
@@ -147,6 +148,7 @@ fun LutealMainScaffold(
         } else if (pendingRecapDate != null) {
             selectedDestination = LutealDestination.AGENDA
             recapDate = runCatching { LocalDate.parse(pendingRecapDate) }.getOrDefault(uiState.today)
+            recapStartAtFirstPage = false
             onPendingReminderConsumed()
         } else if (pendingMonthlyPeriod != null) {
             selectedDestination = LutealDestination.AGENDA
@@ -270,7 +272,10 @@ fun LutealMainScaffold(
                                 dailyRecaps = dailyRecaps,
                                 appointments = appointments,
                                 professionals = professionals,
-                                onOpenRecap = { date -> recapDate = date },
+                                onOpenRecap = { date, startAtFirstPage ->
+                                    recapDate = date
+                                    recapStartAtFirstPage = startAtFirstPage
+                                },
                                 onRecordMedication = { date ->
                                     intakeMedicationId = null
                                     intakeEventId = null
@@ -428,7 +433,11 @@ fun LutealMainScaffold(
         RecapWizardSheet(
             date = date,
             viewModel = recapViewModel,
-            onDismiss = { recapDate = null }
+            startAtFirstPage = recapStartAtFirstPage,
+            onDismiss = {
+                recapDate = null
+                recapStartAtFirstPage = false
+            }
         )
     }
 

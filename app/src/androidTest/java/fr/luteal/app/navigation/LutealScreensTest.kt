@@ -35,7 +35,7 @@ class LutealScreensTest {
                             DailyEntry(date = today, painLevel = 2)
                         )
                     ),
-                    onOpenRecap = { openedDate = it }
+                    onOpenRecap = { date, _ -> openedDate = date }
                 )
             }
         }

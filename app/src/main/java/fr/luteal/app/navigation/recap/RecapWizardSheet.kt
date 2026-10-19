@@ -51,6 +51,7 @@ import kotlinx.coroutines.launch
 fun RecapWizardSheet(
     date: LocalDate,
     viewModel: RecapWizardViewModel,
+    startAtFirstPage: Boolean = false,
     onDismiss: () -> Unit
 ) {
     LaunchedEffect(date) { viewModel.open(date) }
@@ -64,9 +65,9 @@ fun RecapWizardSheet(
     var saveCurrentStep by remember { mutableStateOf<(() -> Unit)?>(null) }
     val activePage = pagerState.settledPage
 
-    LaunchedEffect(recap?.date) {
+    LaunchedEffect(recap?.date, startAtFirstPage) {
         val loaded = recap ?: return@LaunchedEffect
-        val target = steps.indexOf(loaded.firstIncompleteStep()).coerceAtLeast(0)
+        val target = loaded.wizardStartPage(startAtFirstPage)
         if (pagerState.currentPage != target) {
             pagerState.scrollToPage(target)
         }

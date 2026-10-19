@@ -16,6 +16,9 @@ data class DailyRecap(
     fun firstIncompleteStep(): RecapStep =
         RecapStep.ordered.firstOrNull { it !in completedSteps } ?: RecapStep.BOWEL
 
+    fun wizardStartPage(startAtFirstPage: Boolean): Int =
+        if (startAtFirstPage) 0 else RecapStep.ordered.indexOf(firstIncompleteStep()).coerceAtLeast(0)
+
     fun isFullyComplete(): Boolean = completedSteps.containsAll(RecapStep.ordered)
 
     companion object {

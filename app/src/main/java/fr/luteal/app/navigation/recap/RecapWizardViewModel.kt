@@ -77,11 +77,6 @@ class RecapWizardViewModel @Inject constructor(
         }
     }
 
-    fun initialPageIndex(): Int {
-        val recap = _recap.value ?: return 0
-        return RecapStep.ordered.indexOf(recap.firstIncompleteStep()).coerceAtLeast(0)
-    }
-
     fun completeStep(step: RecapStep) {
         val date = _recapDate.value ?: return
         viewModelScope.launch {

@@ -65,4 +65,13 @@ class DailyRecapRepositoryTest {
         val recap = repository.get(date)
         assertEquals(RecapStep.PSY, recap?.firstIncompleteStep())
     }
+
+    @Test
+    fun wizardStartPageEditOpensCycleWhenFullyComplete() = runTest {
+        val date = LocalDate.of(2026, 4, 2)
+        RecapStep.ordered.forEach { repository.markStepComplete(date, it) }
+        val recap = repository.get(date) ?: error("missing recap")
+        assertEquals(0, recap.wizardStartPage(startAtFirstPage = true))
+        assertEquals(RecapStep.ordered.lastIndex, recap.wizardStartPage(startAtFirstPage = false))
+    }
 }

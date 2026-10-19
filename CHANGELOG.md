@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Frise : types et professionnels en menus multi-sélection uniquement ; filtre par spécialité retiré.
 - Récap du jour, étape Douleurs : section « Événements du jour » retirée (carte du corps et échelles 5D inchangées).
 - Récap du jour, étape Général : alcool et impact sur la journée en menus déroulants.
+- Récap du jour : « Modifier » ouvre l’assistant à la première étape (Cycle).
 
 ## [0.11.3] - 2026-10-19
 

@@ -105,7 +105,7 @@ fun AgendaScreen(
     dailyRecaps: Map<LocalDate, DailyRecap> = emptyMap(),
     appointments: Map<String, fr.luteal.core.model.professional.Appointment> = emptyMap(),
     professionals: Map<String, fr.luteal.core.model.professional.Professional> = emptyMap(),
-    onOpenRecap: (LocalDate) -> Unit = {},
+    onOpenRecap: (LocalDate, startAtFirstPage: Boolean) -> Unit = { _, _ -> },
     onRecordMedication: (LocalDate) -> Unit = {},
     onRecordSymptom: (LocalDate) -> Unit = {},
     onRecordCare: (LocalDate) -> Unit = {},
@@ -315,7 +315,7 @@ fun AgendaScreen(
                     onBackfillCycle = onBackfillCycle,
                     onEditCycle = { cycleToEdit = it },
                     onDeleteCycle = { cycleToDelete = it },
-                    onOpenRecap = { onOpenRecap(selectedDate) }
+                    onOpenRecap = { startAtFirstPage -> onOpenRecap(selectedDate, startAtFirstPage) }
                 )
             }
             item {
@@ -349,7 +349,7 @@ fun AgendaScreen(
             actions = listOf(
                 SpeedDialAction("agenda_action_daily_recap", dailyRecapLabel) {
                     fabExpanded = false
-                    onOpenRecap(selectedDate)
+                    onOpenRecap(selectedDate, false)
                 },
                 SpeedDialAction("agenda_action_medication", medicationLabel) {
                     fabExpanded = false
@@ -789,7 +789,7 @@ private fun SelectedDayInspectionCard(
     onBackfillCycle: () -> Unit = {},
     onEditCycle: (Cycle) -> Unit,
     onDeleteCycle: (Cycle) -> Unit,
-    onOpenRecap: () -> Unit,
+    onOpenRecap: (startAtFirstPage: Boolean) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val hasRecapContent = recap?.completedSteps?.isNotEmpty() == true
@@ -931,7 +931,7 @@ private fun SelectedDayInspectionCard(
                 } else {
                     stringResource(R.string.daily_recap_complete)
                 },
-                onClick = onOpenRecap,
+                onClick = { onOpenRecap(hasRecapContent) },
                 icon = if (hasRecapContent) Icons.Rounded.Edit else Icons.Rounded.Add,
                 modifier = Modifier.fillMaxWidth()
             )
