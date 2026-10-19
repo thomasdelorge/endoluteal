@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.11.3] - 2026-10-19
+
 ### Added
 
 - Récap du jour, étape Général : étourdissements et vertiges (échelles comme maux de tête et nausées).
