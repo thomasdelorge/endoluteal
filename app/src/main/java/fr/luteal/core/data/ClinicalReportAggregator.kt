@@ -45,7 +45,9 @@ object ClinicalSymptomNames {
         "nausea" to "Nausées",
         "digestive_changes" to "Troubles digestifs / Transit",
         "acne" to "Acné",
-        "breast_tenderness" to "Tension mammaire / Mastodynies"
+        "breast_tenderness" to "Tension mammaire / Mastodynies",
+        "dizziness" to "Étourdissements",
+        "vertigo" to "Vertiges"
     )
 
     private val namesEn = mapOf(
@@ -63,7 +65,9 @@ object ClinicalSymptomNames {
         "nausea" to "Nausea",
         "digestive_changes" to "Digestive changes",
         "acne" to "Acne",
-        "breast_tenderness" to "Breast tenderness"
+        "breast_tenderness" to "Breast tenderness",
+        "dizziness" to "Dizziness",
+        "vertigo" to "Vertigo"
     )
 
     fun getName(symptomId: String, language: ReportLanguage): String {

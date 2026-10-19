@@ -45,6 +45,12 @@ fun DailyRecapReadOnlyContent(
             recap.general.sleepQuality?.let { ReadOnlyLine(stringResource(R.string.recap_general_sleep), scaleLine(it, scaleLabels)) }
             recap.general.headache?.let { ReadOnlyLine(stringResource(R.string.recap_general_headache), scaleLine(it, scaleLabels)) }
             recap.general.nausea?.let { ReadOnlyLine(stringResource(R.string.recap_general_nausea), scaleLine(it, scaleLabels)) }
+            recap.general.dizziness?.let {
+                ReadOnlyLine(stringResource(R.string.recap_general_dizziness), scaleLine(it, scaleLabels))
+            }
+            recap.general.vertigo?.let {
+                ReadOnlyLine(stringResource(R.string.recap_general_vertigo), scaleLine(it, scaleLabels))
+            }
             if (!recap.general.dailyImpact.isNullOrBlank() && recap.general.dailyImpact != RecapDailyImpact.NONE.name) {
                 val impact = runCatching { RecapDailyImpact.valueOf(recap.general.dailyImpact) }.getOrNull()
                 if (impact != null) {

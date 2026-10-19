@@ -67,6 +67,8 @@ data class RecapGeneralPayload(
     val sleepQuality: Int? = null,
     val headache: Int? = null,
     val nausea: Int? = null,
+    val dizziness: Int? = null,
+    val vertigo: Int? = null,
     val alcoholDrinks: Int? = null,
     val dailyImpact: String = ""
 )

@@ -35,10 +35,23 @@ fun GeneralStep(
     var sleepQuality by remember(initial) { mutableStateOf(initial.sleepQuality) }
     var headache by remember(initial) { mutableStateOf(initial.headache) }
     var nausea by remember(initial) { mutableStateOf(initial.nausea) }
+    var dizziness by remember(initial) { mutableStateOf(initial.dizziness) }
+    var vertigo by remember(initial) { mutableStateOf(initial.vertigo) }
     var alcohol by remember(initial) { mutableStateOf(initial.alcoholDrinks) }
     var impact by remember(initial) { mutableStateOf(initial.dailyImpact.ifBlank { RecapDailyImpact.NONE.name }) }
 
-    LaunchedEffect(fatigue, stress, sleepQuality, headache, nausea, alcohol, impact, active) {
+    LaunchedEffect(
+        fatigue,
+        stress,
+        sleepQuality,
+        headache,
+        nausea,
+        dizziness,
+        vertigo,
+        alcohol,
+        impact,
+        active
+    ) {
         if (!active) return@LaunchedEffect
         onBindSave {
             onContinue(
@@ -48,6 +61,8 @@ fun GeneralStep(
                     sleepQuality = sleepQuality,
                     headache = headache,
                     nausea = nausea,
+                    dizziness = dizziness,
+                    vertigo = vertigo,
                     alcoholDrinks = alcohol,
                     dailyImpact = impact
                 )
@@ -62,6 +77,8 @@ fun GeneralStep(
         LabeledScale(stringResource(R.string.recap_general_sleep), sleepQuality, onValueChange = { sleepQuality = it })
         LabeledScale(stringResource(R.string.recap_general_headache), headache, onValueChange = { headache = it })
         LabeledScale(stringResource(R.string.recap_general_nausea), nausea, onValueChange = { nausea = it })
+        LabeledScale(stringResource(R.string.recap_general_dizziness), dizziness, onValueChange = { dizziness = it })
+        LabeledScale(stringResource(R.string.recap_general_vertigo), vertigo, onValueChange = { vertigo = it })
         Text(stringResource(R.string.recap_general_alcohol), style = MaterialTheme.typography.labelLarge)
         FlowRow(horizontalArrangement = Arrangement.spacedBy(LutealSpacing.xs)) {
             listOf(0, 1, 2, 3).forEach { drinks ->

@@ -954,6 +954,8 @@
     <string name="recap_general_sleep">Qualité du sommeil</string>
     <string name="recap_general_headache">Maux de tête</string>
     <string name="recap_general_nausea">Nausées</string>
+    <string name="recap_general_dizziness">Étourdissements</string>
+    <string name="recap_general_vertigo">Vertiges</string>
     <string name="recap_general_alcohol">Alcool (verres)</string>
     <string name="recap_alcohol_0">0</string>
     <string name="recap_alcohol_1">1</string>
