@@ -1,5 +1,6 @@
 package fr.luteal.core.model.report
 
+import fr.luteal.core.model.JournalEventType
 import fr.luteal.core.model.professional.Specialty
 import java.time.Instant
 
@@ -16,24 +17,44 @@ data class TimelineVisit(
 
 enum class TimelineVisitKind {
     APPOINTMENT,
-    HOSPITALIZATION
+    HOSPITALIZATION,
+    MEDICATION_INTAKE,
+    SYMPTOM,
+    CARE_SESSION;
+
+    companion object {
+        val FILTERABLE_ALL: Set<TimelineVisitKind> = entries.toSet()
+
+        fun fromJournalType(type: JournalEventType): TimelineVisitKind? = when (type) {
+            JournalEventType.APPOINTMENT -> APPOINTMENT
+            JournalEventType.HOSPITALIZATION -> HOSPITALIZATION
+            JournalEventType.MEDICATION_INTAKE -> MEDICATION_INTAKE
+            JournalEventType.SYMPTOM -> SYMPTOM
+            JournalEventType.CARE_SESSION -> CARE_SESSION
+            JournalEventType.PAIN_CHECK -> null
+        }
+    }
 }
 
 object TimelineFilter {
     fun apply(
         visits: List<TimelineVisit>,
+        kinds: Set<TimelineVisitKind>,
         professionalId: String?,
         specialties: Set<Specialty>,
         fromInclusive: Instant?,
         toInclusive: Instant?
     ): List<TimelineVisit> {
         return visits.filter { visit ->
+            val kindOk = visit.kind in kinds
             val professionalOk = professionalId == null ||
                 (visit.kind == TimelineVisitKind.APPOINTMENT && visit.professionalId == professionalId)
-            val specialtyOk = specialties.isEmpty() || visit.specialty in specialties
+            val specialtyOk = specialties.isEmpty() ||
+                visit.kind != TimelineVisitKind.APPOINTMENT ||
+                visit.specialty in specialties
             val after = fromInclusive == null || !visit.at.isBefore(fromInclusive)
             val before = toInclusive == null || !visit.at.isAfter(toInclusive)
-            professionalOk && specialtyOk && after && before
+            kindOk && professionalOk && specialtyOk && after && before
         }.sortedByDescending { it.at }
     }
 }

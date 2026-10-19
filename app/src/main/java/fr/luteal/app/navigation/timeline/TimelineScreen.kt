@@ -1,10 +1,13 @@
 package fr.luteal.app.navigation.timeline
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -13,15 +16,12 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -62,10 +62,18 @@ fun TimelineScreen(
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(LutealSpacing.xs)) {
                     if (visit.subtitle.isNotBlank()) Text(visit.subtitle)
-                    Text(
-                        text = visit.detail.ifBlank { stringResource(R.string.timeline_no_report) },
-                        style = MaterialTheme.typography.bodyMedium
-                    )
+                    if (state.filters.showDetails) {
+                        Text(
+                            text = visit.detail.ifBlank {
+                                if (visit.kind == TimelineVisitKind.APPOINTMENT) {
+                                    stringResource(R.string.timeline_no_report)
+                                } else {
+                                    ""
+                                }
+                            },
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    }
                 }
             },
             confirmButton = {
@@ -108,6 +116,56 @@ fun TimelineScreen(
                 onClick = { exportPdf.launch("frise.pdf") },
                 modifier = Modifier.fillMaxWidth()
             )
+        }
+        item {
+            val resources = LocalContext.current.resources
+            val allKindsLabel = stringResource(R.string.timeline_filter_all)
+            val noneKindsLabel = stringResource(R.string.timeline_filter_none)
+            val kindsSummary = when {
+                state.filters.kinds.isEmpty() -> noneKindsLabel
+                state.filters.kinds == TimelineVisitKind.FILTERABLE_ALL -> allKindsLabel
+                else -> TimelineVisitKind.entries
+                    .filter { it in state.filters.kinds }
+                    .sortedBy { it.ordinal }
+                    .map { resources.timelineKindLabel(it) }
+                    .joinToString()
+            }
+            Text(stringResource(R.string.timeline_filter_kind), style = MaterialTheme.typography.labelLarge)
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(LutealSpacing.xs)) {
+                FilterChip(
+                    selected = state.filters.kinds == TimelineVisitKind.FILTERABLE_ALL,
+                    onClick = { viewModel.selectAllKinds() },
+                    label = { Text(allKindsLabel) }
+                )
+                FilterChip(
+                    selected = state.filters.kinds.isEmpty(),
+                    onClick = { viewModel.selectNoKinds() },
+                    label = { Text(noneKindsLabel) }
+                )
+            }
+            SettingsMultiSelectDropdown(
+                label = "",
+                options = TimelineVisitKind.entries,
+                selected = state.filters.kinds,
+                optionLabel = { resources.timelineKindLabel(it) },
+                onToggle = viewModel::toggleKind,
+                emptySummary = noneKindsLabel,
+                summaryText = kindsSummary.takeIf { state.filters.kinds.isNotEmpty() },
+                modifier = Modifier.padding(top = LutealSpacing.xs)
+            )
+        }
+        item {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(stringResource(R.string.timeline_show_details), style = MaterialTheme.typography.labelLarge)
+                Switch(
+                    checked = state.filters.showDetails,
+                    onCheckedChange = viewModel::setShowDetails
+                )
+            }
         }
         item {
             Text(stringResource(R.string.timeline_filter_professional), style = MaterialTheme.typography.labelLarge)
@@ -167,6 +225,21 @@ fun TimelineScreen(
 }
 
 @Composable
+private fun timelineKindLabel(kind: TimelineVisitKind): String =
+    stringResource(kind.labelRes())
+
+private fun android.content.res.Resources.timelineKindLabel(kind: TimelineVisitKind): String =
+    getString(kind.labelRes())
+
+private fun TimelineVisitKind.labelRes(): Int = when (this) {
+    TimelineVisitKind.APPOINTMENT -> R.string.event_type_appointment
+    TimelineVisitKind.HOSPITALIZATION -> R.string.event_type_hospitalization
+    TimelineVisitKind.MEDICATION_INTAKE -> R.string.event_type_medication_intake
+    TimelineVisitKind.SYMPTOM -> R.string.event_type_symptom
+    TimelineVisitKind.CARE_SESSION -> R.string.event_type_care_session
+}
+
+@Composable
 private fun SinceLastVisitCard(summary: SinceLastVisitSummary) {
     LutealCard(modifier = Modifier.fillMaxWidth()) {
         Column(verticalArrangement = Arrangement.spacedBy(LutealSpacing.xs)) {
@@ -200,14 +273,13 @@ private fun TimelineRow(
     zone: ZoneId,
     onClick: () -> Unit
 ) {
-    val kind = if (visit.kind == TimelineVisitKind.APPOINTMENT) {
-        stringResource(R.string.timeline_kind_appointment)
-    } else {
-        stringResource(R.string.timeline_kind_hospital)
-    }
     LutealCard(modifier = Modifier.fillMaxWidth().clickable(onClick = onClick)) {
         Column {
-            Text(kind, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
+            Text(
+                timelineKindLabel(visit.kind),
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.primary
+            )
             Text(visit.title, style = MaterialTheme.typography.titleMedium)
             Text(
                 visit.at.atZone(zone).toLocalDate().format(dateFormat),

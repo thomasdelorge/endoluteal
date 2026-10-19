@@ -23,6 +23,7 @@ fun <T> SettingsMultiSelectDropdown(
     optionLabel: (T) -> String,
     onToggle: (T) -> Unit,
     emptySummary: String,
+    summaryText: String? = null,
     modifier: Modifier = Modifier
 ) {
     var menuOpen by remember { mutableStateOf(false) }
@@ -33,10 +34,10 @@ fun <T> SettingsMultiSelectDropdown(
             modifier = Modifier.fillMaxWidth()
         ) {
             Text(
-                if (selected.isEmpty()) {
-                    emptySummary
-                } else {
-                    selected.map(optionLabel).joinToString()
+                when {
+                    selected.isEmpty() -> emptySummary
+                    summaryText != null -> summaryText
+                    else -> selected.map(optionLabel).joinToString()
                 }
             )
         }

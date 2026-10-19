@@ -9,16 +9,12 @@ import fr.luteal.core.data.repository.JournalEventRepository
 import fr.luteal.core.data.repository.MedicationIntakeRepository
 import fr.luteal.core.data.repository.MedicationRepository
 import fr.luteal.core.data.repository.ProfessionalRepository
-import fr.luteal.core.model.EventPayload
 import fr.luteal.core.model.JournalEvent
 import fr.luteal.core.model.JournalEventType
 import fr.luteal.core.model.meds.Medication
 import fr.luteal.core.model.professional.Appointment
 import fr.luteal.core.model.professional.Professional
-import fr.luteal.core.model.professional.ReportStatus
 import fr.luteal.core.model.professional.Specialty
-import fr.luteal.core.model.report.DailyMedicationIntakeCount
-import fr.luteal.core.model.report.MedicationIntakeDailyAggregator
 import fr.luteal.core.model.report.SinceLastVisitAggregator
 import fr.luteal.core.model.report.SinceLastVisitSummary
 import fr.luteal.core.model.report.TimelineFilter
@@ -27,6 +23,8 @@ import fr.luteal.core.model.report.TimelinePainSample
 import fr.luteal.core.model.report.TimelinePdfContent
 import fr.luteal.core.model.report.TimelineVisit
 import fr.luteal.core.model.report.TimelineVisitKind
+import fr.luteal.core.model.report.TimelineVisitMapper
+import fr.luteal.core.model.report.buildTimelinePdfContent
 import java.time.Clock
 import java.time.Instant
 import java.time.ZoneId
@@ -41,15 +39,17 @@ import kotlinx.coroutines.flow.stateIn
 data class TimelineFilters(
     val professionalId: String? = null,
     val specialties: Set<Specialty> = emptySet(),
+    val kinds: Set<TimelineVisitKind> = TimelineVisitKind.FILTERABLE_ALL,
+    val showDetails: Boolean = true,
     val periodDays: Int? = null,
     val selectedEventId: String? = null
 )
 
 data class TimelineUiState(
     val visits: List<TimelineVisit> = emptyList(),
+    val allVisits: List<TimelineVisit> = emptyList(),
     val professionals: List<Professional> = emptyList(),
     val summary: SinceLastVisitSummary? = null,
-    val dailyIntakes: List<DailyMedicationIntakeCount> = emptyList(),
     val filters: TimelineFilters = TimelineFilters(),
     val selected: TimelineVisit? = null
 )
@@ -89,6 +89,27 @@ class TimelineViewModel @Inject constructor(
         filters.value = filters.value.copy(specialties = next, selectedEventId = null)
     }
 
+    fun toggleKind(kind: TimelineVisitKind) {
+        val current = filters.value.kinds
+        val next = if (kind in current) current - kind else current + kind
+        filters.value = filters.value.copy(kinds = next, selectedEventId = null)
+    }
+
+    fun selectAllKinds() {
+        filters.value = filters.value.copy(
+            kinds = TimelineVisitKind.FILTERABLE_ALL,
+            selectedEventId = null
+        )
+    }
+
+    fun selectNoKinds() {
+        filters.value = filters.value.copy(kinds = emptySet(), selectedEventId = null)
+    }
+
+    fun setShowDetails(enabled: Boolean) {
+        filters.value = filters.value.copy(showDetails = enabled)
+    }
+
     fun setPeriodDays(days: Int?) {
         filters.value = filters.value.copy(periodDays = days, selectedEventId = null)
     }
@@ -99,10 +120,17 @@ class TimelineViewModel @Inject constructor(
 
     fun pdfContent(): TimelinePdfContent {
         val state = uiState.value
-        return TimelinePdfContent(
-            visits = state.visits,
+        val now = clock.instant()
+        val from = state.filters.periodDays?.let { now.minus(it.toLong(), ChronoUnit.DAYS) }
+        return buildTimelinePdfContent(
+            visits = state.allVisits,
+            kinds = state.filters.kinds,
+            professionalId = state.filters.professionalId,
+            specialties = state.filters.specialties,
+            fromInclusive = from,
+            toInclusive = if (from == null) null else now,
             summary = state.summary,
-            dailyIntakes = state.dailyIntakes
+            showDetails = state.filters.showDetails
         )
     }
 
@@ -111,31 +139,28 @@ class TimelineViewModel @Inject constructor(
         val zone = ZoneId.systemDefault()
         val professionalsById = data.professionals.associateBy { it.id }
         val appointmentsByEvent = data.appointments.associateBy { it.eventId }
-        val visits = data.events.mapNotNull { event ->
-            toVisit(event, appointmentsByEvent[event.id], professionalsById)
+        val intakeLabels = intakeLabels(data.intakes, data.medications)
+        val children = TimelineVisitMapper.childrenByParent(data.events)
+        val visits = TimelineVisitMapper.rootEvents(data.events).mapNotNull { event ->
+            TimelineVisitMapper.toVisit(
+                event = event,
+                appointment = appointmentsByEvent[event.id],
+                professionals = professionalsById,
+                intakeLabel = intakeLabels[event.id],
+                childEvents = children[event.id].orEmpty(),
+                zone = zone
+            )
         }
         val from = current.periodDays?.let { now.minus(it.toLong(), ChronoUnit.DAYS) }
         val filtered = TimelineFilter.apply(
             visits = visits,
+            kinds = current.kinds,
             professionalId = current.professionalId,
             specialties = current.specialties,
             fromInclusive = from,
             toInclusive = if (from == null) null else now
         )
         val names = data.medications.associate { it.id to it.name }
-        val intakeSamples = data.intakes.map { row ->
-            TimelineIntakeSample(
-                at = Instant.ofEpochMilli(row.startAt),
-                medicationId = row.medicationId,
-                medicationName = names[row.medicationId] ?: row.medicationId
-            )
-        }
-        val dailyIntakes = MedicationIntakeDailyAggregator.aggregate(
-            intakes = intakeSamples,
-            zone = zone,
-            fromInclusive = from,
-            toInclusive = if (from == null) null else now
-        )
         val summary = current.professionalId?.let { professionalId ->
             val last = data.events
                 .filter { it.type == JournalEventType.APPOINTMENT }
@@ -169,50 +194,21 @@ class TimelineViewModel @Inject constructor(
         }
         return TimelineUiState(
             visits = filtered,
+            allVisits = visits,
             professionals = data.professionals.sortedBy { it.name },
             summary = summary,
-            dailyIntakes = dailyIntakes,
             filters = current,
             selected = filtered.find { it.eventId == current.selectedEventId }
         )
     }
 
-    private fun toVisit(
-        event: JournalEvent,
-        appointment: Appointment?,
-        professionals: Map<String, Professional>
-    ): TimelineVisit? {
-        return when (event.type) {
-            JournalEventType.APPOINTMENT -> {
-                val professional = appointment?.professionalId?.let { professionals[it] }
-                val status = appointment?.reportStatus
-                val statusLabel = if (status == ReportStatus.CANCELLED) " · annulé" else ""
-                TimelineVisit(
-                    eventId = event.id,
-                    kind = TimelineVisitKind.APPOINTMENT,
-                    professionalId = appointment?.professionalId,
-                    specialty = professional?.specialty,
-                    at = event.startAt,
-                    title = professional?.name ?: event.notes.ifBlank { "Rendez-vous" },
-                    subtitle = (professional?.displaySpecialty() ?: "") + statusLabel,
-                    detail = appointment?.report.orEmpty()
-                )
-            }
-            JournalEventType.HOSPITALIZATION -> {
-                val payload = event.payload as? EventPayload.Hospitalization
-                TimelineVisit(
-                    eventId = event.id,
-                    kind = TimelineVisitKind.HOSPITALIZATION,
-                    professionalId = null,
-                    specialty = null,
-                    at = event.startAt,
-                    title = payload?.place?.ifBlank { null } ?: "Hospitalisation",
-                    subtitle = payload?.reason.orEmpty(),
-                    detail = event.notes
-                )
-            }
-            else -> null
-        }
+    private fun intakeLabels(
+        intakes: List<MedicationIntakeRow>,
+        medications: List<Medication>
+    ): Map<String, String> = intakes.associate { row ->
+        val name = medications.find { it.id == row.medicationId }?.name ?: row.medicationId
+        val units = if (row.units % 1.0 == 0.0) row.units.toInt().toString() else row.units.toString()
+        row.eventId to "$name · $units"
     }
 
     private data class TimelineSource(

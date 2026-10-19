@@ -6,19 +6,27 @@ import java.time.Instant
 data class TimelinePdfContent(
     val visits: List<TimelineVisit>,
     val summary: SinceLastVisitSummary?,
-    val dailyIntakes: List<DailyMedicationIntakeCount> = emptyList()
+    val showDetails: Boolean = true
 )
 
 fun buildTimelinePdfContent(
     visits: List<TimelineVisit>,
+    kinds: Set<TimelineVisitKind>,
     professionalId: String?,
     specialties: Set<Specialty>,
     fromInclusive: Instant?,
     toInclusive: Instant?,
     summary: SinceLastVisitSummary?,
-    dailyIntakes: List<DailyMedicationIntakeCount> = emptyList()
+    showDetails: Boolean = true
 ): TimelinePdfContent = TimelinePdfContent(
-    visits = TimelineFilter.apply(visits, professionalId, specialties, fromInclusive, toInclusive),
+    visits = TimelineFilter.apply(
+        visits = visits,
+        kinds = kinds,
+        professionalId = professionalId,
+        specialties = specialties,
+        fromInclusive = fromInclusive,
+        toInclusive = toInclusive
+    ),
     summary = if (professionalId == null) null else summary,
-    dailyIntakes = dailyIntakes
+    showDetails = showDetails
 )

@@ -47,20 +47,16 @@ object TimelinePdfBuilder {
 
         line("Frise Endoluteal", titlePaint)
         y += 8f
-        line("Rendez-vous et hospitalisations", headerPaint)
+        line("Événements", headerPaint)
         content.visits.forEach { visit ->
-            val kind = if (visit.kind == TimelineVisitKind.APPOINTMENT) "RDV" else "Hospitalisation"
+            val kind = kindLabel(visit.kind)
             val day = visit.at.atZone(zone).toLocalDate().format(dates)
             line("$day · $kind · ${visit.title}", textPaint)
             if (visit.subtitle.isNotBlank()) line(visit.subtitle, textPaint)
-            if (visit.detail.isNotBlank()) line(visit.detail, textPaint)
-        }
-        if (content.dailyIntakes.isNotEmpty()) {
-            y += 8f
-            line("Prises de médicaments par jour", headerPaint)
-            val dates = DateTimeFormatter.ofPattern("dd-MM-yyyy")
-            content.dailyIntakes.forEach { row ->
-                line("${row.date.format(dates)} · x${row.count} ${row.name}", textPaint)
+            if (content.showDetails && visit.detail.isNotBlank()) {
+                visit.detail.lineSequence().forEach { detailLine ->
+                    line(detailLine, textPaint)
+                }
             }
         }
         content.summary?.let { summary ->
@@ -88,6 +84,14 @@ object TimelinePdfBuilder {
         document.finishPage(page)
         document.writeTo(outputStream)
         document.close()
+    }
+
+    private fun kindLabel(kind: TimelineVisitKind): String = when (kind) {
+        TimelineVisitKind.APPOINTMENT -> "RDV"
+        TimelineVisitKind.HOSPITALIZATION -> "Hospitalisation"
+        TimelineVisitKind.MEDICATION_INTAKE -> "Médicament"
+        TimelineVisitKind.SYMPTOM -> "Symptôme"
+        TimelineVisitKind.CARE_SESSION -> "Soin"
     }
 
     private fun paint(size: Float, bold: Boolean, color: String) = Paint().apply {

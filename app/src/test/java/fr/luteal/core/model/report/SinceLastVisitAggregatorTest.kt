@@ -52,7 +52,14 @@ class TimelineFilterTest {
             visit("b", TimelineVisitKind.APPOINTMENT, "pro-2"),
             visit("h", TimelineVisitKind.HOSPITALIZATION, null)
         )
-        val filtered = TimelineFilter.apply(visits, professionalId = "pro-1", specialties = emptySet(), fromInclusive = null, toInclusive = null)
+        val filtered = TimelineFilter.apply(
+            visits,
+            kinds = TimelineVisitKind.FILTERABLE_ALL,
+            professionalId = "pro-1",
+            specialties = emptySet(),
+            fromInclusive = null,
+            toInclusive = null
+        )
         assertEquals(listOf("a"), filtered.map { it.eventId })
     }
 
@@ -64,6 +71,7 @@ class TimelineFilterTest {
         )
         val filtered = TimelineFilter.apply(
             visits,
+            kinds = TimelineVisitKind.FILTERABLE_ALL,
             professionalId = null,
             specialties = setOf(Specialty.GYNECOLOGIST),
             fromInclusive = null,
@@ -82,12 +90,61 @@ class TimelineFilterTest {
         )
         val filtered = TimelineFilter.apply(
             visits,
+            kinds = TimelineVisitKind.FILTERABLE_ALL,
             professionalId = null,
             specialties = setOf(Specialty.GYNECOLOGIST, Specialty.SURGEON),
             fromInclusive = null,
             toInclusive = null
         )
         assertEquals(listOf("a", "c"), filtered.map { it.eventId })
+    }
+
+    @Test
+    fun specialtyFilterKeepsHospitalizations() {
+        val visits = listOf(
+            visit("a", TimelineVisitKind.APPOINTMENT, "pro-1", Specialty.GYNECOLOGIST),
+            visit("h", TimelineVisitKind.HOSPITALIZATION, null, null)
+        )
+        val filtered = TimelineFilter.apply(
+            visits,
+            kinds = TimelineVisitKind.FILTERABLE_ALL,
+            professionalId = null,
+            specialties = setOf(Specialty.RADIOLOGIST),
+            fromInclusive = null,
+            toInclusive = null
+        )
+        assertEquals(listOf("h"), filtered.map { it.eventId })
+    }
+
+    @Test
+    fun emptyKindsFilterShowsNothing() {
+        val visits = listOf(visit("a", TimelineVisitKind.APPOINTMENT, "pro-1"))
+        val filtered = TimelineFilter.apply(
+            visits,
+            kinds = emptySet(),
+            professionalId = null,
+            specialties = emptySet(),
+            fromInclusive = null,
+            toInclusive = null
+        )
+        assertTrue(filtered.isEmpty())
+    }
+
+    @Test
+    fun kindFilterSubset() {
+        val visits = listOf(
+            visit("a", TimelineVisitKind.APPOINTMENT, "pro-1"),
+            visit("m", TimelineVisitKind.MEDICATION_INTAKE, null, null)
+        )
+        val filtered = TimelineFilter.apply(
+            visits,
+            kinds = setOf(TimelineVisitKind.MEDICATION_INTAKE),
+            professionalId = null,
+            specialties = emptySet(),
+            fromInclusive = null,
+            toInclusive = null
+        )
+        assertEquals(listOf("m"), filtered.map { it.eventId })
     }
 
     @Test
@@ -98,6 +155,7 @@ class TimelineFilterTest {
         )
         val filtered = TimelineFilter.apply(
             visits,
+            kinds = TimelineVisitKind.FILTERABLE_ALL,
             professionalId = null,
             specialties = emptySet(),
             fromInclusive = null,
@@ -115,6 +173,7 @@ class TimelineFilterTest {
         )
         val content = buildTimelinePdfContent(
             visits = visits,
+            kinds = TimelineVisitKind.FILTERABLE_ALL,
             professionalId = "pro-1",
             specialties = emptySet(),
             fromInclusive = null,
@@ -132,6 +191,7 @@ class TimelineFilterTest {
         )
         val content = buildTimelinePdfContent(
             visits = visits,
+            kinds = TimelineVisitKind.FILTERABLE_ALL,
             professionalId = null,
             specialties = setOf(Specialty.RADIOLOGIST),
             fromInclusive = null,
