@@ -8,12 +8,16 @@ import android.graphics.pdf.PdfDocument
 
 internal class PdfPageWriter(
     private val document: PdfDocument,
-    private val pageWidth: Int,
-    private val pageHeight: Int,
+    private val portraitWidth: Int,
+    private val portraitHeight: Int,
     private val margin: Float
 ) {
-    val contentWidth: Float = pageWidth - margin * 2
-    private val footerY = pageHeight - margin - 15f
+    private var pageWidth = portraitWidth
+    private var pageHeight = portraitHeight
+    val contentWidth: Float
+        get() = pageWidth - margin * 2
+    private val footerY: Float
+        get() = pageHeight - margin - 15f
     private var pageNumber = 0
     private var currentPage: PdfDocument.Page? = null
 
@@ -32,12 +36,19 @@ internal class PdfPageWriter(
 
     fun start() {
         pageNumber = 0
-        newPage()
+        newPage(landscape = false)
     }
 
-    fun newPage() {
+    fun newPage(landscape: Boolean = false) {
         currentPage?.let { finishCurrentPage() }
         pageNumber++
+        if (landscape) {
+            pageWidth = portraitHeight
+            pageHeight = portraitWidth
+        } else {
+            pageWidth = portraitWidth
+            pageHeight = portraitHeight
+        }
         currentPage = document.startPage(
             PdfDocument.PageInfo.Builder(pageWidth, pageHeight, pageNumber).create()
         )
@@ -50,7 +61,7 @@ internal class PdfPageWriter(
     }
 
     fun ensureSpace(needed: Float) {
-        if (y + needed > footerY - 12f) newPage()
+        if (y + needed > footerY - 12f) newPage(landscape = pageWidth > pageHeight)
     }
 
     fun line(text: String, paint: Paint = textPaint) {

@@ -52,6 +52,24 @@ object ClinicalSynthesisAggregator {
             request.toInclusive
         )
         val weeklyMetrics = buildWeeklyRecapMetrics(recapsInPeriod) + mapOf("pain_marks" to weeklyPain)
+        val dailyMetrics = buildDailyRecapMetrics(recapsInPeriod) + mapOf(
+            "pain_marks" to dailyPainFromSources(
+                request.events,
+                recapsInPeriod,
+                request.zone,
+                request.fromInclusive,
+                request.toInclusive
+            )
+        )
+        val painPinSamples = marks.map { mark ->
+            PainPinSample(
+                zone = mark.zone,
+                intensity = mark.intensity,
+                pinSide = mark.pinSide,
+                pinX = mark.pinX,
+                pinY = mark.pinY
+            )
+        }
         val trends = weeklyMetrics.mapValues { (_, points) -> trend(points.map { it.average }) }
         val reliability = sectionReliability(recapsInPeriod, periodDays, marks, request.events, request.fromInclusive, request.toInclusive)
         val treatmentUses = if (SynthesisPdfSection.TREATMENTS in request.sections) {
@@ -85,7 +103,9 @@ object ClinicalSynthesisAggregator {
             reliability = reliability,
             attentionPoints = attentionPoints(weeklyPain, treatmentEffects, recapsInPeriod, zoneHeat),
             weeklyMetrics = weeklyMetrics.filterKeys { metricIncluded(it, request.sections) },
+            dailyMetrics = dailyMetrics.filterKeys { metricIncluded(it, request.sections) },
             trends = trends.filterKeys { metricIncluded(it, request.sections) },
+            painPinSamples = painPinSamples,
             impactDays = impactDays(recapsInPeriod),
             zonePeaks = zoneHeat.entries
                 .sortedByDescending { it.value }
@@ -132,6 +152,51 @@ object ClinicalSynthesisAggregator {
                 WeeklyMetricPoint(weekStart, values.average(), values.max())
             }
             .sortedBy { it.weekStart }
+    }
+
+    private fun buildDailyRecapMetrics(recaps: List<DailyRecap>): Map<String, List<DailyMetricPoint>> {
+        fun series(step: RecapStep, values: (DailyRecap) -> Int?): List<DailyMetricPoint> =
+            recaps.filter { step in it.completedSteps }
+                .mapNotNull { recap -> values(recap)?.let { recap.date to it.toDouble() } }
+                .sortedBy { it.first }
+                .map { DailyMetricPoint(it.first, it.second) }
+
+        return buildMap {
+            put("5d_dysmenorrhea", series(RecapStep.PAIN) { it.pain.dysmenorrhea })
+            put("5d_dyspareunia", series(RecapStep.PAIN) { it.pain.dyspareunia })
+            put("5d_dyschezia", series(RecapStep.PAIN) { it.pain.dyschezia })
+            put("5d_dysuria", series(RecapStep.PAIN) { it.pain.dysuria })
+            put("5d_chronic", series(RecapStep.PAIN) { it.pain.chronicPelvicPain })
+            put("psy_mood", series(RecapStep.PSY) { it.psy.mood })
+            put("psy_anxiety", series(RecapStep.PSY) { it.psy.anxiety })
+            put("general_fatigue", series(RecapStep.GENERAL) { it.general.fatigue })
+            put("general_stress", series(RecapStep.GENERAL) { it.general.stress })
+            put("general_sleep", series(RecapStep.GENERAL) { it.general.sleepQuality })
+            put("bowel_bloating", series(RecapStep.BOWEL) { it.bowel.bloating })
+        }
+    }
+
+    private fun dailyPainFromSources(
+        events: List<JournalEvent>,
+        recaps: List<DailyRecap>,
+        zone: ZoneId,
+        from: Instant,
+        to: Instant
+    ): List<DailyMetricPoint> {
+        val byDay = mutableMapOf<LocalDate, Int>()
+        events.filter { !it.startAt.isBefore(from) && !it.startAt.isAfter(to) }
+            .forEach { event ->
+                val day = event.startAt.atZone(zone).toLocalDate()
+                event.marks.maxOfOrNull { it.intensity }?.let { max ->
+                    byDay[day] = maxOf(byDay.getOrDefault(day, 0), max)
+                }
+            }
+        recaps.forEach { recap ->
+            recap.pain.marks.maxOfOrNull { it.intensity }?.let { max ->
+                byDay[recap.date] = maxOf(byDay.getOrDefault(recap.date, 0), max)
+            }
+        }
+        return byDay.entries.sortedBy { it.key }.map { DailyMetricPoint(it.key, it.value.toDouble()) }
     }
 
     private fun buildWeeklyRecapMetrics(recaps: List<DailyRecap>): Map<String, List<WeeklyMetricPoint>> {

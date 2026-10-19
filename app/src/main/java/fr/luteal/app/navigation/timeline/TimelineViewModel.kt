@@ -121,10 +121,9 @@ class TimelineViewModel @Inject constructor(
         val now = clock.instant()
         val zone = ZoneId.systemDefault()
         val window = resolveWindow(state.filters, data, now, zone)
-        val from = window.first ?: Instant.EPOCH
-        val to = window.second ?: FAR_FUTURE
-        val filterLines = buildFilterLines(state.filters)
         val recaps = dailyRecapRepository.allOnce()
+        val (from, to) = synthesisWindow(window, data, recaps, now, zone)
+        val filterLines = buildFilterLines(state.filters)
         ClinicalSynthesisAggregator.build(
             SynthesisBuildRequest(
                 fromInclusive = from,
@@ -214,6 +213,34 @@ class TimelineViewModel @Inject constructor(
             sinceLastVisitAvailable = sinceLastVisitAvailable
         )
     }
+
+    private fun synthesisWindow(
+        window: Pair<Instant?, Instant?>,
+        data: TimelineSource,
+        recaps: List<fr.luteal.core.model.recap.DailyRecap>,
+        now: Instant,
+        zone: ZoneId
+    ): Pair<Instant, Instant> {
+        val to = when (val end = window.second) {
+            null, FAR_FUTURE -> now
+            else -> end.coerceAtMost(now)
+        }
+        val from = window.first ?: earliestDataInstant(data, recaps, zone).coerceAtMost(to)
+        return from to to
+    }
+
+    private fun earliestDataInstant(
+        data: TimelineSource,
+        recaps: List<fr.luteal.core.model.recap.DailyRecap>,
+        zone: ZoneId
+    ): Instant {
+        val eventMin = data.events.minOfOrNull { it.startAt }
+        val recapMin = recaps.minOfOrNull { it.date }?.atStartOfDay(zone)?.toInstant()
+        return listOfNotNull(eventMin, recapMin).minOrNull() ?: nowFallback(zone)
+    }
+
+    private fun nowFallback(zone: ZoneId): Instant =
+        java.time.LocalDate.now(zone).atStartOfDay(zone).toInstant()
 
     private fun resolveWindow(
         filters: TimelineFilters,

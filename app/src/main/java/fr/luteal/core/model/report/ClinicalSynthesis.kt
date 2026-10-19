@@ -34,6 +34,22 @@ data class WeeklyMetricPoint(
     val max: Int
 )
 
+data class DailyMetricPoint(
+    val date: LocalDate,
+    val value: Double
+)
+
+/** Pin or zone-only mark for PDF heatmap rendering. */
+data class PainPinSample(
+    val zone: String,
+    val intensity: Int,
+    val pinSide: String? = null,
+    val pinX: Float? = null,
+    val pinY: Float? = null
+) {
+    val hasPin: Boolean = pinSide != null && pinX != null && pinY != null
+}
+
 data class ImpactDayCount(
     val reducedActivity: Int = 0,
     val cancelledWork: Int = 0,
@@ -53,7 +69,9 @@ data class ClinicalSynthesis(
     val reliability: Map<SynthesisPdfSection, SectionReliability>,
     val attentionPoints: List<String>,
     val weeklyMetrics: Map<String, List<WeeklyMetricPoint>>,
+    val dailyMetrics: Map<String, List<DailyMetricPoint>>,
     val trends: Map<String, SynthesisTrend>,
+    val painPinSamples: List<PainPinSample>,
     val impactDays: ImpactDayCount,
     val zonePeaks: List<ZonePeak>,
     val painHeatmap: Map<String, Int>,

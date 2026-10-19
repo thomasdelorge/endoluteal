@@ -1,25 +1,41 @@
 package fr.luteal.core.data.report
 
 import android.content.Context
-import android.graphics.Paint
+import android.graphics.Color
 import android.graphics.pdf.PdfDocument
 import fr.luteal.core.model.report.ClinicalSynthesis
+import fr.luteal.core.model.report.MetricSeriesSmoother
 import fr.luteal.core.model.report.SynthesisPdfSection
 import fr.luteal.core.model.report.SynthesisTrend
 import fr.luteal.core.model.report.TimelineVisitKind
-import fr.luteal.core.model.report.WeeklyMetricPoint
 import java.io.OutputStream
+import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import java.time.format.FormatStyle
+import java.util.Locale
 
 object SynthesisPdfBuilder {
     private const val PAGE_WIDTH = 595
     private const val PAGE_HEIGHT = 842
     private const val MARGIN = 40f
+    private const val CHART_HEIGHT = 200f
+
+    private val chartColors = listOf(
+        "#C62828",
+        "#1565C0",
+        "#2E7D32",
+        "#6A1B9A",
+        "#EF6C00",
+        "#00838F"
+    )
 
     fun write(context: Context, synthesis: ClinicalSynthesis, outputStream: OutputStream) {
         val document = PdfDocument()
         val writer = PdfPageWriter(document, PAGE_WIDTH, PAGE_HEIGHT, MARGIN)
         val dates = DateTimeFormatter.ofPattern("dd-MM-yyyy")
+        val zone = ZoneId.systemDefault()
+        val longDate = DateTimeFormatter.ofLocalizedDate(FormatStyle.FULL).withLocale(Locale.FRANCE)
+
         writer.start()
         writer.line("Synthèse Endoluteal", writer.titlePaint)
         writer.line(
@@ -35,37 +51,17 @@ object SynthesisPdfBuilder {
 
         writer.line("Fiabilité (jours avec données / période)", writer.headerPaint)
         synthesis.reliability.forEach { (section, rel) ->
-            writer.line("${section.name}: ${rel.daysWithData}/${rel.daysInPeriod}")
+            writer.line("${SynthesisPdfLabels.sectionReliabilityLabel(section)} : ${rel.daysWithData}/${rel.daysInPeriod}")
         }
         writer.y += 8f
 
-        if (SynthesisPdfSection.PAIN in synthesis.sections) {
-            writer.line("Évolution — douleur et 5D", writer.headerPaint)
-            drawSeries(writer, synthesis.weeklyMetrics["pain_marks"], "Douleur (marques)")
-            listOf("5d_dysmenorrhea", "5d_dyschezia", "5d_dysuria", "5d_chronic").forEach { key ->
-                drawSeries(writer, synthesis.weeklyMetrics[key], metricLabel(key), synthesis.trends[key])
-            }
-        }
-        if (SynthesisPdfSection.PSY in synthesis.sections) {
-            writer.line("Évolution — psy", writer.headerPaint)
-            synthesis.weeklyMetrics.filterKeys { it.startsWith("psy_") }.forEach { (key, series) ->
-                drawSeries(writer, series, metricLabel(key), synthesis.trends[key])
-            }
-        }
         if (SynthesisPdfSection.GENERAL in synthesis.sections) {
-            writer.line("Évolution — général", writer.headerPaint)
-            synthesis.weeklyMetrics.filterKeys { it.startsWith("general_") }.forEach { (key, series) ->
-                drawSeries(writer, series, metricLabel(key), synthesis.trends[key])
-            }
             val impact = synthesis.impactDays
             writer.line(
                 "Retentissement : activité réduite ${impact.reducedActivity} j, " +
                     "travail annulé ${impact.cancelledWork} j, repos ${impact.bedrest} j"
             )
-        }
-        if (SynthesisPdfSection.BOWEL in synthesis.sections) {
-            writer.line("Évolution — intestinal", writer.headerPaint)
-            drawSeries(writer, synthesis.weeklyMetrics["bowel_bloating"], "Ballonnements", synthesis.trends["bowel_bloating"])
+            writer.y += 6f
         }
 
         if (SynthesisPdfSection.TREATMENTS in synthesis.sections && !synthesis.treatmentEffects.isEmpty) {
@@ -79,16 +75,53 @@ object SynthesisPdfBuilder {
             synthesis.medicationCounts.forEach { count ->
                 writer.line("${count.name} : ${count.count} prise(s) sur la période")
             }
+            writer.y += 6f
         }
 
+        drawChartSection(
+            writer,
+            synthesis,
+            title = "Évolution — douleurs 5D",
+            keys = listOf("5d_dysmenorrhea", "5d_dyspareunia", "5d_dyschezia", "5d_dysuria", "5d_chronic"),
+            enabled = SynthesisPdfSection.PAIN in synthesis.sections
+        )
+        drawChartSection(
+            writer,
+            synthesis,
+            title = "Évolution — intensité des marques",
+            keys = listOf("pain_marks"),
+            enabled = SynthesisPdfSection.PAIN in synthesis.sections
+        )
+        drawChartSection(
+            writer,
+            synthesis,
+            title = "Évolution — psycho",
+            keys = listOf("psy_mood", "psy_anxiety"),
+            enabled = SynthesisPdfSection.PSY in synthesis.sections
+        )
+        drawChartSection(
+            writer,
+            synthesis,
+            title = "Évolution — général",
+            keys = listOf("general_fatigue", "general_stress", "general_sleep"),
+            enabled = SynthesisPdfSection.GENERAL in synthesis.sections
+        )
+        drawChartSection(
+            writer,
+            synthesis,
+            title = "Évolution — intestinal",
+            keys = listOf("bowel_bloating"),
+            enabled = SynthesisPdfSection.BOWEL in synthesis.sections
+        )
+
         if (SynthesisPdfSection.PAIN_HEATMAP in synthesis.sections) {
-            writer.ensureSpace(200f)
-            writer.line("Localisation des douleurs (max sur la période)", writer.headerPaint)
+            writer.newPage(landscape = true)
+            writer.line("Localisation des douleurs (saisies sur la période)", writer.headerPaint)
             val mapTop = writer.y + 4f
             val halfW = writer.contentWidth / 2f - 4f
-            val mapH = 180f
+            val mapH = writer.contentWidth * 0.42f
             PainHeatmapPdfDrawer.drawSilhouette(
-                context, writer.canvas, MARGIN, mapTop, halfW, mapH, front = true, synthesis.painHeatmap
+                context, writer.canvas, MARGIN, mapTop, halfW, mapH, front = true, synthesis.painPinSamples
             )
             PainHeatmapPdfDrawer.drawSilhouette(
                 context,
@@ -98,19 +131,30 @@ object SynthesisPdfBuilder {
                 halfW,
                 mapH,
                 front = false,
-                synthesis.painHeatmap
+                synthesis.painPinSamples
             )
-            writer.y = mapTop + mapH + 12f
+            writer.y = mapTop + mapH + 8f
             writer.line("Face avant (gauche) · Face arrière (droite)", writer.secondaryPaint)
             writer.line(
-                "Carte CHOIR (Stanford University). Données : intensité max par zone sur la période.",
+                "Carte CHOIR (Stanford University). Disques = intensité à l’emplacement saisi.",
                 writer.secondaryPaint
             )
-            synthesis.internalZoneHeat.forEach { (zone, intensity) ->
-                writer.line("$zone : $intensity/10")
+            if (synthesis.internalZoneHeat.isNotEmpty()) {
+                writer.line("Zones internes (intensité max) :", writer.textPaint)
+                synthesis.internalZoneHeat.entries
+                    .sortedByDescending { it.value }
+                    .forEach { (zone, intensity) ->
+                        writer.line(
+                            "  • ${SynthesisPdfLabels.zoneHumanLabel(context, zone)} : $intensity/10",
+                            writer.secondaryPaint
+                        )
+                    }
             }
-            synthesis.zonePeaks.take(8).forEach { peak ->
-                writer.line("${peak.zone} : max ${peak.max}/10")
+            synthesis.zonePeaks.take(6).forEach { peak ->
+                writer.line(
+                    "Pic : ${SynthesisPdfLabels.zoneHumanLabel(context, peak.zone)} — max ${peak.max}/10",
+                    writer.secondaryPaint
+                )
             }
             synthesis.phasePain.forEach { row ->
                 writer.line("Phase ${row.phase} : douleur moy. ${"%.1f".format(row.average)} (${row.sampleDays} j)")
@@ -118,14 +162,34 @@ object SynthesisPdfBuilder {
         }
 
         if (SynthesisPdfSection.JOURNAL in synthesis.sections) {
+            writer.newPage(landscape = false)
             writer.line("Journal détaillé", writer.headerPaint)
-            synthesis.journal.visits.forEach { visit ->
-                val day = visit.at.atZone(java.time.ZoneId.systemDefault()).toLocalDate().format(dates)
-                writer.line("$day · ${kindLabel(visit.kind)} · ${visit.title}")
-                if (visit.subtitle.isNotBlank()) writer.line(visit.subtitle, writer.secondaryPaint)
-                if (synthesis.journal.showDetails && visit.detail.isNotBlank()) {
-                    visit.detail.lineSequence().forEach { writer.line(it, writer.secondaryPaint) }
+            val timeFmt = DateTimeFormatter.ofPattern("HH:mm")
+            val byDate = synthesis.journal.visits
+                .groupBy { it.at.atZone(zone).toLocalDate() }
+                .toSortedMap()
+            byDate.forEach { (date, dayVisits) ->
+                writer.ensureSpace(24f)
+                writer.line(date.format(longDate), writer.headerPaint)
+                TimelineVisitKind.entries.forEach { kind ->
+                    val items = dayVisits.filter { it.kind == kind }.sortedBy { it.at }
+                    if (items.isEmpty()) return@forEach
+                    writer.line(SynthesisPdfLabels.visitKindLabel(kind), writer.textPaint)
+                    items.forEach { visit ->
+                        val time = timeFmt.format(visit.at.atZone(zone))
+                        val header = "  $time · ${visit.title}"
+                        writer.line(header)
+                        if (visit.subtitle.isNotBlank()) {
+                            writer.line("    ${visit.subtitle}", writer.secondaryPaint)
+                        }
+                        if (synthesis.journal.showDetails && visit.detail.isNotBlank()) {
+                            visit.detail.lineSequence().take(8).forEach { line ->
+                                writer.line("    $line", writer.secondaryPaint)
+                            }
+                        }
+                    }
                 }
+                writer.y += 4f
             }
         }
 
@@ -134,53 +198,56 @@ object SynthesisPdfBuilder {
         document.close()
     }
 
-    private fun drawSeries(
+    private fun drawChartSection(
         writer: PdfPageWriter,
-        series: List<WeeklyMetricPoint>?,
-        label: String,
-        trend: SynthesisTrend? = null
+        synthesis: ClinicalSynthesis,
+        title: String,
+        keys: List<String>,
+        enabled: Boolean
     ) {
-        if (series.isNullOrEmpty()) {
-            writer.line("$label : données insuffisantes")
+        if (!enabled) return
+        val seriesList = keys.mapNotNull { key ->
+            val points = synthesis.dailyMetrics[key] ?: return@mapNotNull null
+            if (points.isEmpty()) return@mapNotNull null
+            key
+        }
+        if (seriesList.isEmpty()) return
+
+        writer.newPage(landscape = true)
+        writer.line(title, writer.headerPaint)
+        val trendHints = seriesList.mapNotNull { key ->
+            synthesis.trends[key]?.takeIf { it != SynthesisTrend.INSUFFICIENT }?.let {
+                "${SynthesisPdfLabels.metricLabel(key)} : ${SynthesisPdfLabels.trendLabel(it)}"
+            }
+        }
+        if (trendHints.isNotEmpty()) {
+            writer.line(trendHints.joinToString(" · "), writer.secondaryPaint)
+        }
+        writer.y += 4f
+
+        val chartSeries = seriesList.mapIndexed { index, key ->
+            val points = synthesis.dailyMetrics[key] ?: emptyList()
+            PdfChartSeries(
+                label = SynthesisPdfLabels.metricLabel(key),
+                color = Color.parseColor(chartColors[index % chartColors.size]),
+                points = points,
+                smoothed = MetricSeriesSmoother.movingAverage(points)
+            )
+        }
+        val hasData = chartSeries.any { it.points.isNotEmpty() }
+        if (!hasData) {
+            writer.line("Données insuffisantes sur la période.")
             return
         }
-        val trendLabel = trend?.let { " · tendance ${it.name}" } ?: ""
-        writer.line("$label$trendLabel", writer.textPaint)
-        val barPaint = Paint().apply {
-            color = android.graphics.Color.parseColor("#235B4E")
-            style = Paint.Style.FILL
-        }
-        series.takeLast(12).forEach { point ->
-            writer.ensureSpace(20f)
-            writer.line(
-                "  Sem. ${point.weekStart}: moy ${"%.1f".format(point.average)}, max ${point.max}",
-                writer.secondaryPaint
-            )
-            val width = writer.contentWidth * 0.6f * (point.max.coerceIn(0, 10) / 10f)
-            writer.canvas.drawRect(MARGIN + 12f, writer.y, MARGIN + 12f + width, writer.y + 6f, barPaint)
-            writer.y += 12f
-        }
-    }
-
-    private fun metricLabel(key: String): String = when (key) {
-        "5d_dysmenorrhea" -> "Dysménorrhée"
-        "5d_dyschezia" -> "Dyschezie"
-        "5d_dysuria" -> "Dysurie"
-        "5d_chronic" -> "Douleur pelvienne chronique"
-        "psy_mood" -> "Humeur"
-        "psy_anxiety" -> "Anxiété"
-        "general_fatigue" -> "Fatigue"
-        "general_stress" -> "Stress"
-        "general_sleep" -> "Sommeil"
-        "bowel_bloating" -> "Ballonnements"
-        else -> key
-    }
-
-    private fun kindLabel(kind: TimelineVisitKind): String = when (kind) {
-        TimelineVisitKind.APPOINTMENT -> "RDV"
-        TimelineVisitKind.HOSPITALIZATION -> "Hospitalisation"
-        TimelineVisitKind.MEDICATION_INTAKE -> "Médicament"
-        TimelineVisitKind.SYMPTOM -> "Symptôme"
-        TimelineVisitKind.CARE_SESSION -> "Soin"
+        writer.ensureSpace(CHART_HEIGHT + 12f)
+        PdfChartDrawer.draw(
+            writer.canvas,
+            MARGIN,
+            writer.y,
+            writer.contentWidth,
+            CHART_HEIGHT,
+            chartSeries
+        )
+        writer.y += CHART_HEIGHT + 12f
     }
 }

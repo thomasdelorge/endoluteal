@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Frise : export PDF de synthèse pour le médecin (tendances récap, heatmap des douleurs, efficacité des traitements, journal filtré), avec choix des sections et période « depuis le dernier RDV ».
 
+### Changed
+
+- Frise : PDF de synthèse refondu pour le médecin — courbes journalières à points avec tendance lissée (pages paysage), heatmap sur les épingles saisies et libellés anatomiques, journal groupé par date et type ; période « tout l’historique » bornée aux données réelles.
+
 ## [0.11.4] - 2026-10-19
 
 ### Changed
