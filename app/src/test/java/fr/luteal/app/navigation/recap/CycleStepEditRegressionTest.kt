@@ -37,6 +37,8 @@ class CycleStepEditRegressionTest {
         composeRule.runOnIdle { triggerSave() }
         assertEquals(true, saved?.hasBleeding)
         assertEquals("HEAVY", saved?.bleedingIntensity)
+        assertEquals(true, saved?.acceptEstimatedPhase)
+        assertEquals("", saved?.phaseOverride)
 
         initial = RecapCyclePayload(hasBleeding = false)
         composeRule.runOnIdle { triggerSave() }

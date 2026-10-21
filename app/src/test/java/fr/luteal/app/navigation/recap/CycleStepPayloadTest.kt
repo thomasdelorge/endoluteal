@@ -1,6 +1,9 @@
 package fr.luteal.app.navigation.recap
 
+import fr.luteal.app.navigation.recap.steps.applyPhaseDropdown
 import fr.luteal.app.navigation.recap.steps.applyBleedingDropdown
+import fr.luteal.app.navigation.recap.steps.phaseDropdownId
+import fr.luteal.app.navigation.recap.steps.RECAP_PHASE_USE_ESTIMATE
 import fr.luteal.app.navigation.recap.steps.applyMucusDropdown
 import fr.luteal.app.navigation.recap.steps.bleedingDropdownId
 import fr.luteal.app.navigation.recap.steps.buildRecapCyclePayload
@@ -50,6 +53,17 @@ class CycleStepPayloadTest {
         assertEquals(BleedingIntensity.LIGHT.name, bleedingDropdownId(hasBleeding = true, intensity = "LIGHT"))
         assertEquals(false, applyBleedingDropdown(RECAP_BLEEDING_NONE).first)
         assertEquals(BleedingIntensity.MEDIUM.name, applyBleedingDropdown(BleedingIntensity.MEDIUM.name).second)
+    }
+
+    @Test
+    fun phaseDropdownDefaultsToEstimateWhenUnknown() {
+        assertEquals(RECAP_PHASE_USE_ESTIMATE, phaseDropdownId(acceptEstimatedPhase = true, phaseOverride = ""))
+        assertEquals(RECAP_PHASE_USE_ESTIMATE, phaseDropdownId(acceptEstimatedPhase = false, phaseOverride = ""))
+        assertEquals("LUTEAL", phaseDropdownId(acceptEstimatedPhase = false, phaseOverride = "LUTEAL"))
+        assertEquals(true, applyPhaseDropdown(RECAP_PHASE_USE_ESTIMATE).first)
+        assertEquals("", applyPhaseDropdown(RECAP_PHASE_USE_ESTIMATE).second)
+        assertEquals(false, applyPhaseDropdown("MENSTRUAL").first)
+        assertEquals("MENSTRUAL", applyPhaseDropdown("MENSTRUAL").second)
     }
 
     @Test

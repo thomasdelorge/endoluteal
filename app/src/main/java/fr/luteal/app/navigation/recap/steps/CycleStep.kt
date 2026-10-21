@@ -23,6 +23,13 @@ import fr.luteal.core.model.recap.RecapCyclePayload
 
 internal const val RECAP_BLEEDING_NONE = "NONE"
 internal const val RECAP_MUCUS_NONE = "NONE"
+internal const val RECAP_PHASE_USE_ESTIMATE = "ESTIMATE"
+
+internal fun phaseDropdownId(acceptEstimatedPhase: Boolean, phaseOverride: String): String =
+    if (acceptEstimatedPhase || phaseOverride.isBlank()) RECAP_PHASE_USE_ESTIMATE else phaseOverride
+
+internal fun applyPhaseDropdown(id: String): Pair<Boolean, String> =
+    if (id == RECAP_PHASE_USE_ESTIMATE) true to "" else false to id
 
 internal fun bleedingDropdownId(hasBleeding: Boolean, intensity: String): String =
     if (!hasBleeding) RECAP_BLEEDING_NONE else intensity.ifBlank { BleedingIntensity.LIGHT.name }
@@ -44,17 +51,8 @@ fun CycleStep(
     active: Boolean = true,
     onBindSave: (() -> Unit) -> Unit = {}
 ) {
-    val estimated = ui?.estimatedPhase
-    var acceptEstimate by remember(initial) { mutableStateOf(initial.acceptEstimatedPhase) }
-    var phaseOverride by remember(initial) {
-        mutableStateOf(
-            when {
-                initial.acceptEstimatedPhase -> {
-                    estimated?.name ?: initial.phaseOverride.ifBlank { CyclePhase.FOLLICULAR.name }
-                }
-                else -> initial.phaseOverride.ifBlank { estimated?.name ?: CyclePhase.FOLLICULAR.name }
-            }
-        )
+    var phaseChoice by remember(initial) {
+        mutableStateOf(phaseDropdownId(initial.acceptEstimatedPhase, initial.phaseOverride))
     }
     var bleedingChoice by remember(initial) {
         mutableStateOf(bleedingDropdownId(initial.hasBleeding, initial.bleedingIntensity))
@@ -63,8 +61,9 @@ fun CycleStep(
         mutableStateOf(mucusDropdownId(initial.hasCervicalMucus, initial.mucusTexture))
     }
 
-    LaunchedEffect(phaseOverride, acceptEstimate, bleedingChoice, mucusChoice, active) {
+    LaunchedEffect(phaseChoice, bleedingChoice, mucusChoice, active) {
         if (!active) return@LaunchedEffect
+        val (acceptEstimate, phaseOverride) = applyPhaseDropdown(phaseChoice)
         val (hasBleeding, bleeding) = applyBleedingDropdown(bleedingChoice)
         val (hasMucus, mucus) = applyMucusDropdown(mucusChoice)
         onBindSave {
@@ -88,12 +87,9 @@ fun CycleStep(
         Text("$phaseLabel · $estimateNote", style = MaterialTheme.typography.bodyMedium)
         SettingsDropdownField(
             label = stringResource(R.string.recap_cycle_phase_label),
-            selectedLabel = phaseLabel(selectedCyclePhase(phaseOverride)),
-            options = CyclePhase.entries.map { it.name to phaseLabel(it) },
-            onSelect = { picked ->
-                phaseOverride = picked
-                acceptEstimate = false
-            }
+            selectedLabel = phaseDropdownLabel(phaseChoice),
+            options = recapPhaseDropdownOptions(),
+            onSelect = { phaseChoice = it }
         )
         SettingsDropdownField(
             label = stringResource(R.string.recap_bleeding_question),
@@ -155,8 +151,16 @@ private fun mucusDropdownLabel(id: String): String = recapMucusDropdownOptions()
     ?.second
     ?: stringResource(R.string.recap_mucus_none)
 
-private fun selectedCyclePhase(phaseKey: String): CyclePhase =
-    runCatching { CyclePhase.valueOf(phaseKey) }.getOrElse { CyclePhase.FOLLICULAR }
+@Composable
+private fun recapPhaseDropdownOptions(): List<Pair<String, String>> =
+    listOf(RECAP_PHASE_USE_ESTIMATE to stringResource(R.string.recap_cycle_phase_use_estimate)) +
+        CyclePhase.entries.map { it.name to phaseLabel(it) }
+
+@Composable
+private fun phaseDropdownLabel(id: String): String = recapPhaseDropdownOptions()
+    .firstOrNull { it.first == id }
+    ?.second
+    ?: stringResource(R.string.recap_cycle_phase_use_estimate)
 
 @Composable
 private fun phaseLabel(phase: CyclePhase): String = when (phase) {

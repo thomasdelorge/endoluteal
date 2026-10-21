@@ -928,6 +928,7 @@
     <string name="recap_phase_estimate_note">Phase estimée</string>
     <string name="recap_phase_recorded_note">Phase enregistrée</string>
     <string name="recap_cycle_phase_label">Phase du cycle</string>
+    <string name="recap_cycle_phase_use_estimate">Je ne sais pas (estimation si possible)</string>
     <string name="recap_bleeding_question">Saignements aujourd’hui ?</string>
     <string name="recap_bleeding_none">Non</string>
     <string name="recap_bleeding_yes_spotting">Oui, traces</string>

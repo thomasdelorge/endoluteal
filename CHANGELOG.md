@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.12.1] - 2026-10-21
+
+### Fixed
+
+- Récap du jour, étape Cycle : option « Je ne sais pas » par défaut pour la phase (plus de présélection folliculaire obligatoire).
+
 ## [0.12.0] - 2026-10-19
 
 ### Added
