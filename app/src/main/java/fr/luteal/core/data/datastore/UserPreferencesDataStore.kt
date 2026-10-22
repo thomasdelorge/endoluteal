@@ -72,7 +72,12 @@ data class UserPreferences(
     val colorPalette: String = "EVERGREEN",
     val calendarImportEnabled: Boolean = false,
     val calendarImportKeywords: String = "",
-    val calendarSelectedIds: Set<String> = emptySet()
+    val calendarSelectedIds: Set<String> = emptySet(),
+    val openRouterSttModel: String = fr.luteal.core.openrouter.OpenRouterDefaults.STT_MODEL,
+    val openRouterSummaryModel: String = fr.luteal.core.openrouter.OpenRouterDefaults.SUMMARY_MODEL,
+    val openRouterSttLanguage: String = fr.luteal.core.openrouter.OpenRouterDefaults.STT_LANGUAGE,
+    val openRouterSttDiarizationEnabled: Boolean = false,
+    val openRouterAiEnabled: Boolean = false
 ) {
     /** Contexts the user declared during onboarding. */
     val declaredContexts: Set<TrackingContext>
@@ -153,6 +158,11 @@ class UserPreferencesDataStore @Inject constructor(
         val CALENDAR_IMPORT_ENABLED = booleanPreferencesKey("calendar_import_enabled")
         val CALENDAR_IMPORT_KEYWORDS = stringPreferencesKey("calendar_import_keywords")
         val CALENDAR_SELECTED_IDS = stringPreferencesKey("calendar_selected_ids")
+        val OPENROUTER_STT_MODEL = stringPreferencesKey("openrouter_stt_model")
+        val OPENROUTER_SUMMARY_MODEL = stringPreferencesKey("openrouter_summary_model")
+        val OPENROUTER_STT_LANGUAGE = stringPreferencesKey("openrouter_stt_language")
+        val OPENROUTER_STT_DIARIZATION = booleanPreferencesKey("openrouter_stt_diarization")
+        val OPENROUTER_AI_ENABLED = booleanPreferencesKey("openrouter_ai_enabled")
     }
 
     val userPreferencesFlow: Flow<UserPreferences> = context.dataStore.data
@@ -223,7 +233,15 @@ class UserPreferencesDataStore @Inject constructor(
                     ?.map { it.trim() }
                     ?.filter { it.isNotEmpty() }
                     ?.toSet()
-                    ?: emptySet()
+                    ?: emptySet(),
+                openRouterSttModel = preferences[OPENROUTER_STT_MODEL]
+                    ?: fr.luteal.core.openrouter.OpenRouterDefaults.STT_MODEL,
+                openRouterSummaryModel = preferences[OPENROUTER_SUMMARY_MODEL]
+                    ?: fr.luteal.core.openrouter.OpenRouterDefaults.SUMMARY_MODEL,
+                openRouterSttLanguage = preferences[OPENROUTER_STT_LANGUAGE]
+                    ?: fr.luteal.core.openrouter.OpenRouterDefaults.STT_LANGUAGE,
+                openRouterSttDiarizationEnabled = preferences[OPENROUTER_STT_DIARIZATION] ?: false,
+                openRouterAiEnabled = preferences[OPENROUTER_AI_ENABLED] ?: false
             )
         }
 
@@ -308,6 +326,12 @@ class UserPreferencesDataStore @Inject constructor(
     suspend fun setCalendarSelectedIds(ids: Set<String>) = edit {
         it[CALENDAR_SELECTED_IDS] = ids.joinToString(",")
     }
+    suspend fun setOpenRouterSttModel(model: String) = edit { it[OPENROUTER_STT_MODEL] = model }
+    suspend fun setOpenRouterSummaryModel(model: String) = edit { it[OPENROUTER_SUMMARY_MODEL] = model }
+    suspend fun setOpenRouterSttLanguage(language: String) = edit { it[OPENROUTER_STT_LANGUAGE] = language }
+    suspend fun setOpenRouterSttDiarizationEnabled(enabled: Boolean) =
+        edit { it[OPENROUTER_STT_DIARIZATION] = enabled }
+    suspend fun setOpenRouterAiEnabled(enabled: Boolean) = edit { it[OPENROUTER_AI_ENABLED] = enabled }
     suspend fun clear() = edit { it.clear() }
 
     private suspend fun edit(block: suspend (androidx.datastore.preferences.core.MutablePreferences) -> Unit) {

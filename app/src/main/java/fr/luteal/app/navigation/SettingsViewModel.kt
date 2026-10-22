@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 import android.content.Context
@@ -28,6 +29,11 @@ import androidx.annotation.StringRes
 import fr.luteal.app.BuildConfig
 import fr.luteal.app.R
 import fr.luteal.core.data.datastore.UserPreferencesDataStore
+import fr.luteal.core.data.openrouter.OpenRouterApiKeyStore
+import fr.luteal.core.openrouter.OpenRouterDefaults
+import fr.luteal.core.openrouter.OpenRouterModelInfo
+import fr.luteal.core.openrouter.OpenRouterModelsRepository
+import fr.luteal.core.openrouter.SttModelCapabilities
 import fr.luteal.core.data.security.AppLockManager
 import fr.luteal.core.data.security.PinCryptoManager
 import fr.luteal.core.model.AutoLockTimeout
@@ -58,7 +64,9 @@ class SettingsViewModel @Inject constructor(
     private val pinCryptoManager: PinCryptoManager,
     private val appLockManager: AppLockManager,
     private val clinicalReportAggregator: ClinicalReportAggregator,
-    private val notificationScheduler: NotificationScheduler
+    private val notificationScheduler: NotificationScheduler,
+    private val openRouterApiKeyStore: OpenRouterApiKeyStore,
+    private val openRouterModelsRepository: OpenRouterModelsRepository
 ) : ViewModel() {
     private val testDataActionState = MutableStateFlow<TestDataActionState>(TestDataActionState.Idle)
 
@@ -67,6 +75,9 @@ class SettingsViewModel @Inject constructor(
     private val importState = MutableStateFlow<DataImportState>(DataImportState.Idle)
 
     private val reportExportState = MutableStateFlow<DataExportState>(DataExportState.Idle)
+    private val openRouterKeyPresent = MutableStateFlow(openRouterApiKeyStore.hasApiKey())
+    private val openRouterModelsState = MutableStateFlow(OpenRouterModelsUiState())
+    val openRouterModels: StateFlow<OpenRouterModelsUiState> = openRouterModelsState
 
     private val fileOps: Flow<FileOps> =
         combine(exportState, wipeState, importState, reportExportState) { export, wipe, importOp, report ->
@@ -77,7 +88,8 @@ class SettingsViewModel @Inject constructor(
         userRepository.getUserPreferences(),
         fileOps,
         testDataActionState,
-    ) { preferences, files, actionState ->
+        openRouterKeyPresent,
+    ) { preferences, files, actionState, hasOpenRouterKey ->
         SettingsSyncUiState(
             testDataState = actionState,
             exportState = files.export,
@@ -106,13 +118,96 @@ class SettingsViewModel @Inject constructor(
             themeMode = preferences.themeMode,
             colorPalette = preferences.colorPalette,
             hideDyspareuniaInRecap = preferences.hideDyspareuniaInRecap,
-            hideLibidoInRecap = preferences.hideLibidoInRecap
+            hideLibidoInRecap = preferences.hideLibidoInRecap,
+            openRouterSttModel = preferences.openRouterSttModel,
+            openRouterSummaryModel = preferences.openRouterSummaryModel,
+            openRouterSttLanguage = preferences.openRouterSttLanguage,
+            openRouterSttDiarizationEnabled = preferences.openRouterSttDiarizationEnabled,
+            openRouterAiEnabled = preferences.openRouterAiEnabled,
+            hasOpenRouterApiKey = hasOpenRouterKey
         )
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5_000),
         initialValue = SettingsSyncUiState()
     )
+
+    fun setOpenRouterApiKey(key: String) {
+        openRouterApiKeyStore.setApiKey(key)
+        openRouterKeyPresent.value = openRouterApiKeyStore.hasApiKey()
+        openRouterModelsRepository.clearCache()
+        viewModelScope.launch {
+            if (userPreferencesDataStore.userPreferencesFlow.first().openRouterAiEnabled) {
+                refreshOpenRouterModels(forceRefresh = true)
+            }
+        }
+    }
+
+    fun setOpenRouterAiEnabled(enabled: Boolean) {
+        viewModelScope.launch {
+            userPreferencesDataStore.setOpenRouterAiEnabled(enabled)
+            if (enabled) {
+                refreshOpenRouterModels(forceRefresh = true)
+            } else {
+                clearOpenRouterModels()
+            }
+        }
+    }
+
+    fun clearOpenRouterModels() {
+        openRouterModelsState.value = OpenRouterModelsUiState()
+        openRouterModelsRepository.clearCache()
+    }
+
+    fun refreshOpenRouterModels(forceRefresh: Boolean = false) {
+        viewModelScope.launch {
+            if (!userPreferencesDataStore.userPreferencesFlow.first().openRouterAiEnabled) {
+                clearOpenRouterModels()
+                return@launch
+            }
+            openRouterModelsState.value = openRouterModelsState.value.copy(loading = true, error = null)
+            runCatching {
+                val stt = openRouterModelsRepository.transcriptionModels(forceRefresh)
+                val text = openRouterModelsRepository.textModels(forceRefresh)
+                openRouterModelsState.value = OpenRouterModelsUiState(
+                    loading = false,
+                    sttModels = stt,
+                    textModels = text,
+                    error = null
+                )
+            }.onFailure { error ->
+                openRouterModelsState.value = openRouterModelsState.value.copy(
+                    loading = false,
+                    error = error.message ?: "Erreur"
+                )
+            }
+        }
+    }
+
+    fun setOpenRouterSttModel(model: String) {
+        viewModelScope.launch {
+            userPreferencesDataStore.setOpenRouterSttModel(model.ifBlank { OpenRouterDefaults.STT_MODEL })
+            if (!SttModelCapabilities.supportsDiarization(model)) {
+                userPreferencesDataStore.setOpenRouterSttDiarizationEnabled(false)
+            }
+        }
+    }
+
+    fun setOpenRouterSummaryModel(model: String) {
+        viewModelScope.launch {
+            userPreferencesDataStore.setOpenRouterSummaryModel(
+                model.ifBlank { OpenRouterDefaults.SUMMARY_MODEL }
+            )
+        }
+    }
+
+    fun setOpenRouterSttLanguage(language: String) {
+        viewModelScope.launch { userPreferencesDataStore.setOpenRouterSttLanguage(language) }
+    }
+
+    fun setOpenRouterSttDiarizationEnabled(enabled: Boolean) {
+        viewModelScope.launch { userPreferencesDataStore.setOpenRouterSttDiarizationEnabled(enabled) }
+    }
 
     fun setTrackingContext(context: TrackingContext, enabled: Boolean) {
         viewModelScope.launch {
@@ -504,6 +599,13 @@ sealed interface DataImportState {
     data class Error(val message: String? = null, @param:StringRes val messageResId: Int? = null) : DataImportState
 }
 
+data class OpenRouterModelsUiState(
+    val loading: Boolean = false,
+    val sttModels: List<OpenRouterModelInfo> = emptyList(),
+    val textModels: List<OpenRouterModelInfo> = emptyList(),
+    val error: String? = null
+)
+
 data class SettingsSyncUiState(
     val testDataState: TestDataActionState = TestDataActionState.Idle,
     val exportState: DataExportState = DataExportState.Idle,
@@ -534,7 +636,13 @@ data class SettingsSyncUiState(
     val themeMode: String = "SYSTEM",
     val colorPalette: String = "EVERGREEN",
     val hideDyspareuniaInRecap: Boolean = false,
-    val hideLibidoInRecap: Boolean = false
+    val hideLibidoInRecap: Boolean = false,
+    val openRouterSttModel: String = OpenRouterDefaults.STT_MODEL,
+    val openRouterSummaryModel: String = OpenRouterDefaults.SUMMARY_MODEL,
+    val openRouterSttLanguage: String = OpenRouterDefaults.STT_LANGUAGE,
+    val openRouterSttDiarizationEnabled: Boolean = false,
+    val openRouterAiEnabled: Boolean = false,
+    val hasOpenRouterApiKey: Boolean = false
 )
 
 /** Text drafts held together so [combine] stays within its five-flow limit. */

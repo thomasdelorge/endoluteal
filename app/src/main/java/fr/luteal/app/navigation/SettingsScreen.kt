@@ -28,7 +28,9 @@ import androidx.compose.material.icons.rounded.Spa
 import androidx.compose.material.icons.rounded.Medication
 import androidx.compose.material.icons.rounded.Notifications
 import androidx.compose.material.icons.rounded.Palette
+import androidx.compose.material.icons.rounded.AutoAwesome
 import androidx.compose.material.icons.rounded.Storage
+import fr.luteal.app.navigation.settings.OpenRouterSettingsCard
 import androidx.compose.material.icons.rounded.PhoneAndroid
 import androidx.compose.material.icons.rounded.Shield
 import androidx.compose.material.icons.rounded.Sync
@@ -44,6 +46,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -100,6 +103,7 @@ fun SettingsScreen(
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
     val syncState by viewModel.uiState.collectAsState()
+    val openRouterModels by viewModel.openRouterModels.collectAsState()
     val context = LocalContext.current
     val notificationPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
@@ -321,6 +325,9 @@ fun SettingsScreen(
             SettingsHubRow(Icons.Rounded.Storage, stringResource(R.string.settings_hub_data)) {
                 settingsSection = SettingsSection.DATA
             }
+            SettingsHubRow(Icons.Rounded.AutoAwesome, stringResource(R.string.settings_hub_ai)) {
+                settingsSection = SettingsSection.AI
+            }
             SettingsHubRow(Icons.Rounded.Shield, stringResource(R.string.settings_hub_security)) {
                 settingsSection = SettingsSection.SECURITY
             }
@@ -522,6 +529,37 @@ fun SettingsScreen(
         AutoBackupCard()
         MonthlyScoreHistoryCard()
                 }
+                SettingsSection.AI -> {
+                    LaunchedEffect(syncState.openRouterAiEnabled) {
+                        if (syncState.openRouterAiEnabled) {
+                            viewModel.refreshOpenRouterModels()
+                        } else {
+                            viewModel.clearOpenRouterModels()
+                        }
+                    }
+                    SettingsSectionHeader(title = stringResource(R.string.settings_ai_section_title))
+                    Text(
+                        text = stringResource(R.string.settings_ai_section_subtitle),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    OpenRouterSettingsCard(
+                        aiEnabled = syncState.openRouterAiEnabled,
+                        onAiEnabledChange = viewModel::setOpenRouterAiEnabled,
+                        sttModel = syncState.openRouterSttModel,
+                        summaryModel = syncState.openRouterSummaryModel,
+                        sttLanguage = syncState.openRouterSttLanguage,
+                        diarizationEnabled = syncState.openRouterSttDiarizationEnabled,
+                        hasApiKey = syncState.hasOpenRouterApiKey,
+                        modelsState = openRouterModels,
+                        onRefreshModels = { viewModel.refreshOpenRouterModels(forceRefresh = true) },
+                        onSttModelChange = viewModel::setOpenRouterSttModel,
+                        onSummaryModelChange = viewModel::setOpenRouterSummaryModel,
+                        onLanguageChange = viewModel::setOpenRouterSttLanguage,
+                        onDiarizationChange = viewModel::setOpenRouterSttDiarizationEnabled,
+                        onApiKeyChange = viewModel::setOpenRouterApiKey
+                    )
+                }
                 SettingsSection.SECURITY -> {
         SecurityCard(
             isAppLockEnabled = syncState.isAppLockEnabled,
@@ -576,6 +614,7 @@ private enum class SettingsSection {
     REMINDERS,
     APPEARANCE,
     DATA,
+    AI,
     SECURITY
 }
 
