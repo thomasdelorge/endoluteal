@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.13.0] - 2026-10-22
+
 ### Added
 
 - Rendez-vous : pièces jointes locales (tout type de fichier), transcription audio et résumé du transcript via OpenRouter (clé et modèles dans Réglages → Aide IA), langue de transcription réglable (français par défaut), découpage des longs enregistrements, diarisation si le modèle STT le supporte.
