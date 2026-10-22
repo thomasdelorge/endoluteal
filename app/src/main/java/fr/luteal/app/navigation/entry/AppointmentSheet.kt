@@ -4,7 +4,6 @@ import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
@@ -15,18 +14,15 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.material.icons.rounded.Place
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
+import fr.luteal.core.designsystem.component.LutealTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -87,7 +83,6 @@ fun AppointmentSheet(
     var cpamText by remember { mutableStateOf("") }
     var mutuelleText by remember { mutableStateOf("") }
     var confirmDelete by remember { mutableStateOf(false) }
-    var menuOpen by remember { mutableStateOf(false) }
     var showNewProfessional by remember { mutableStateOf(false) }
     var mapsUnavailable by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
@@ -181,6 +176,11 @@ fun AppointmentSheet(
     EntryScaffold(
         onBack = onDismiss,
         confirmEnabled = selectedProfessionalId != null,
+        onDelete = if (persistedEventId != null) {
+            { confirmDelete = true }
+        } else {
+            null
+        },
         onConfirm = {
             val professionalId = selectedProfessionalId ?: return@EntryScaffold
             scope.launch {
@@ -212,35 +212,13 @@ fun AppointmentSheet(
                     style = MaterialTheme.typography.titleLarge,
                     modifier = Modifier.weight(1f)
                 )
-                if (persistedEventId != null) {
-                    Box {
-                        IconButton(onClick = { menuOpen = true }) {
-                            Icon(
-                                Icons.Rounded.MoreVert,
-                                contentDescription = stringResource(R.string.appointment_more_actions)
-                            )
-                        }
-                        DropdownMenu(
-                            expanded = menuOpen,
-                            onDismissRequest = { menuOpen = false }
-                        ) {
-                            DropdownMenuItem(
-                                text = { Text(stringResource(R.string.appointment_delete)) },
-                                onClick = {
-                                    menuOpen = false
-                                    confirmDelete = true
-                                }
-                            )
-                        }
-                    }
-                }
             }
         }
     ) {
             // Header — title, professional, location and description can all be
             // edited locally and override the calendar on the next sync.
             Text(stringResource(R.string.appointment_section_header), style = MaterialTheme.typography.titleMedium)
-            OutlinedTextField(
+            LutealTextField(
                 value = importedTitle,
                 onValueChange = { importedTitle = it },
                 label = { Text(stringResource(R.string.appointment_title)) },
@@ -256,7 +234,7 @@ fun AppointmentSheet(
             }
             val mapsChooserTitle = stringResource(R.string.appointment_open_maps)
             Row(verticalAlignment = Alignment.CenterVertically) {
-                OutlinedTextField(
+                LutealTextField(
                     value = location,
                     onValueChange = {
                         location = it
@@ -283,7 +261,7 @@ fun AppointmentSheet(
             if (mapsUnavailable) {
                 Text(stringResource(R.string.appointment_maps_unavailable))
             }
-            OutlinedTextField(
+            LutealTextField(
                 value = description,
                 onValueChange = { description = it },
                 label = { Text(stringResource(R.string.appointment_description)) },
@@ -303,7 +281,7 @@ fun AppointmentSheet(
 
             // Remboursement — cost and reimbursements.
             Text(stringResource(R.string.appointment_section_reimbursement), style = MaterialTheme.typography.titleMedium)
-            OutlinedTextField(
+            LutealTextField(
                 value = feeText,
                 onValueChange = { feeText = it },
                 label = { Text(stringResource(R.string.appointment_fee)) },
@@ -317,13 +295,13 @@ fun AppointmentSheet(
                 },
                 onSelect = { reimbursementStatus = ReimbursementStatus.fromStored(it) }
             )
-            OutlinedTextField(
+            LutealTextField(
                 value = cpamText,
                 onValueChange = { cpamText = it },
                 label = { Text(stringResource(R.string.appointment_cpam)) },
                 modifier = Modifier.fillMaxWidth()
             )
-            OutlinedTextField(
+            LutealTextField(
                 value = mutuelleText,
                 onValueChange = { mutuelleText = it },
                 label = { Text(stringResource(R.string.appointment_mutuelle)) },
@@ -358,7 +336,7 @@ fun AppointmentSheet(
 
             // CR — the clinical report, free-form multiline.
             Text(stringResource(R.string.appointment_section_report), style = MaterialTheme.typography.titleMedium)
-            OutlinedTextField(
+            LutealTextField(
                 value = report,
                 onValueChange = { report = it },
                 label = { Text(stringResource(R.string.appointment_report)) },
@@ -390,7 +368,7 @@ internal fun NewProfessionalDialog(
         title = { Text(stringResource(R.string.appointment_new_professional_title)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(LutealSpacing.sm)) {
-                OutlinedTextField(
+                LutealTextField(
                     value = name,
                     onValueChange = { name = it },
                     label = { Text(stringResource(R.string.professional_name)) },
@@ -406,7 +384,7 @@ internal fun NewProfessionalDialog(
                     }
                 }
                 if (specialty == Specialty.OTHER) {
-                    OutlinedTextField(
+                    LutealTextField(
                         value = customSpecialty,
                         onValueChange = { customSpecialty = it },
                         label = { Text(stringResource(R.string.professional_custom_specialty)) },
