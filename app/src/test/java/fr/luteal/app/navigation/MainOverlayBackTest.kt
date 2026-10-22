@@ -18,6 +18,15 @@ class MainOverlayBackTest {
     }
 
     @Test
+    fun appointmentDetailBeforeEditor() {
+        val state = MainOverlayBackState(
+            appointmentDetailEventId = "evt-1",
+            appointmentDate = LocalDate.parse("2026-01-02")
+        )
+        assertEquals(MainOverlayBackTarget.APPOINTMENT_DETAIL, resolveMainOverlayBackTarget(state))
+    }
+
+    @Test
     fun returnsNullWhenNoOverlay() {
         assertNull(resolveMainOverlayBackTarget(MainOverlayBackState()))
     }

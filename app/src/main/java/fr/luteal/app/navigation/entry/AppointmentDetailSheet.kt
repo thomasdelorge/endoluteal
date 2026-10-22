@@ -11,14 +11,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Button
+import androidx.compose.foundation.layout.Row
+import androidx.compose.ui.Alignment
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import fr.luteal.app.R
@@ -26,6 +23,8 @@ import fr.luteal.core.common.LocalizedDateFormatter
 import fr.luteal.core.designsystem.theme.LutealSpacing
 import fr.luteal.core.model.JournalEvent
 import fr.luteal.core.model.professional.Appointment
+import fr.luteal.core.model.professional.AppointmentAttachment
+import fr.luteal.core.model.professional.AppointmentAttachmentRole
 import fr.luteal.core.model.professional.Professional
 import fr.luteal.core.model.professional.ReimbursementStatus
 import fr.luteal.core.model.professional.formatCents
@@ -43,6 +42,7 @@ fun AppointmentDetailSheet(
     event: JournalEvent,
     appointment: Appointment,
     professional: Professional?,
+    attachments: List<AppointmentAttachment> = emptyList(),
     onEdit: () -> Unit,
     onDismiss: () -> Unit
 ) {
@@ -93,13 +93,46 @@ fun AppointmentDetailSheet(
             appointment.cpamCents?.let { DetailLine(stringResource(R.string.appointment_cpam), formatCents(it)) }
             appointment.mutuelleCents?.let { DetailLine(stringResource(R.string.appointment_mutuelle), formatCents(it)) }
             remaining?.let { DetailLine(stringResource(R.string.appointment_remaining), formatCents(it)) }
+            AppointmentAiDerivedSections(attachments = attachments)
+
+            val fileAttachments = attachments.filter { it.role == AppointmentAttachmentRole.FILE }
+            if (fileAttachments.isNotEmpty()) {
+                HorizontalDivider(modifier = Modifier.padding(vertical = LutealSpacing.xs))
+                Text(stringResource(R.string.appointment_attachments_title), style = MaterialTheme.typography.titleMedium)
+                fileAttachments.forEach { attachment ->
+                    AppointmentAttachmentTile(
+                        attachment = attachment,
+                        job = null,
+                        canUseOpenRouter = false,
+                        showManageActions = false,
+                        onDelete = null,
+                        onTranscribe = null,
+                        onSummarize = null
+                    )
+                }
+            }
             if (appointment.report.isNotBlank()) {
                 HorizontalDivider(modifier = Modifier.padding(vertical = LutealSpacing.xs))
                 Text(stringResource(R.string.appointment_section_report), style = MaterialTheme.typography.titleMedium)
                 Text(appointment.report, style = MaterialTheme.typography.bodyMedium)
             }
-            Button(onClick = onEdit, modifier = Modifier.fillMaxWidth()) {
-                Text(stringResource(R.string.timeline_edit_appointment))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(LutealSpacing.sm),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                TextButton(
+                    onClick = onDismiss,
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text(stringResource(R.string.action_close))
+                }
+                Button(
+                    onClick = onEdit,
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text(stringResource(R.string.timeline_edit_appointment))
+                }
             }
         }
     }

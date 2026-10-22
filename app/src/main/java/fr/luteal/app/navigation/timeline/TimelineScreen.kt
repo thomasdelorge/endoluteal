@@ -49,7 +49,7 @@ import java.time.format.DateTimeFormatter
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun TimelineScreen(
-    onEditAppointment: (eventId: String, date: LocalDate) -> Unit,
+    onOpenAppointmentDetail: (eventId: String) -> Unit = {},
     viewModel: TimelineViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -103,25 +103,9 @@ fun TimelineScreen(
                 }
             },
             confirmButton = {
-                if (visit.kind == TimelineVisitKind.APPOINTMENT) {
-                    TextButton(onClick = {
-                        viewModel.select(null)
-                        onEditAppointment(visit.eventId, visit.at.atZone(zone).toLocalDate())
-                    }) { Text(stringResource(R.string.timeline_edit_appointment)) }
-                } else {
-                    TextButton(onClick = { viewModel.select(null) }) {
-                        Text(stringResource(R.string.action_close))
-                    }
+                TextButton(onClick = { viewModel.select(null) }) {
+                    Text(stringResource(R.string.action_close))
                 }
-            },
-            dismissButton = if (visit.kind == TimelineVisitKind.APPOINTMENT) {
-                {
-                    TextButton(onClick = { viewModel.select(null) }) {
-                        Text(stringResource(R.string.action_close))
-                    }
-                }
-            } else {
-                null
             }
         )
     }
@@ -231,7 +215,13 @@ fun TimelineScreen(
             }
         }
         items(state.visits, key = { it.eventId }) { visit ->
-            TimelineRow(visit, dateFormat, zone) { viewModel.select(visit.eventId) }
+            TimelineRow(visit, dateFormat, zone) {
+                if (visit.kind == TimelineVisitKind.APPOINTMENT) {
+                    onOpenAppointmentDetail(visit.eventId)
+                } else {
+                    viewModel.select(visit.eventId)
+                }
+            }
         }
     }
 }

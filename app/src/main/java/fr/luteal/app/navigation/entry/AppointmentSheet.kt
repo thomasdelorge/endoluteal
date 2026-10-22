@@ -65,6 +65,10 @@ fun AppointmentSheet(
     onDismiss: () -> Unit
 ) {
     val professionals by viewModel.professionals.collectAsStateWithLifecycle()
+    val attachments by viewModel.attachments.collectAsStateWithLifecycle()
+    val attachmentJob by viewModel.attachmentJob.collectAsStateWithLifecycle()
+    val aiEnabled by viewModel.openRouterAiEnabled.collectAsStateWithLifecycle()
+    val canUseOpenRouter = viewModel.hasOpenRouterKey && aiEnabled
     val zone = remember { ZoneId.systemDefault() }
     var startAt by remember {
         mutableStateOf(
@@ -88,6 +92,35 @@ fun AppointmentSheet(
     var mapsUnavailable by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
+    var persistedEventId by remember { mutableStateOf(existingEventId) }
+
+    LaunchedEffect(existingEventId) {
+        persistedEventId = existingEventId
+    }
+    LaunchedEffect(persistedEventId) {
+        viewModel.watchAttachments(persistedEventId)
+    }
+
+    suspend fun ensureSavedForAttachments(): String? {
+        val professionalId = selectedProfessionalId ?: return null
+        val id = viewModel.save(
+            eventId = persistedEventId,
+            professionalId = professionalId,
+            startAt = startAt.atZone(zone).toInstant(),
+            endAt = endAt.atZone(zone).toInstant(),
+            zoneId = zone,
+            title = importedTitle,
+            location = location,
+            description = description,
+            report = report,
+            feeCents = parseEurosToCents(feeText),
+            reimbursementStatus = reimbursementStatus,
+            cpamCents = parseEurosToCents(cpamText),
+            mutuelleCents = parseEurosToCents(mutuelleText)
+        )
+        persistedEventId = id
+        return id
+    }
 
     LaunchedEffect(existingEventId, professionals) {
         val id = existingEventId ?: return@LaunchedEffect
@@ -112,7 +145,7 @@ fun AppointmentSheet(
         }
     }
 
-    if (confirmDelete && existingEventId != null) {
+    if (confirmDelete && persistedEventId != null) {
         AlertDialog(
             onDismissRequest = { confirmDelete = false },
             title = { Text(stringResource(R.string.appointment_delete_title)) },
@@ -120,7 +153,7 @@ fun AppointmentSheet(
             confirmButton = {
                 TextButton(onClick = {
                     scope.launch {
-                        viewModel.delete(existingEventId)
+                        viewModel.delete(persistedEventId!!)
                         onDismiss()
                     }
                 }) { Text(stringResource(R.string.appointment_delete_confirm)) }
@@ -152,7 +185,7 @@ fun AppointmentSheet(
             val professionalId = selectedProfessionalId ?: return@EntryScaffold
             scope.launch {
                 viewModel.save(
-                    eventId = existingEventId,
+                    eventId = persistedEventId,
                     professionalId = professionalId,
                     startAt = startAt.atZone(zone).toInstant(),
                     endAt = endAt.atZone(zone).toInstant(),
@@ -179,7 +212,7 @@ fun AppointmentSheet(
                     style = MaterialTheme.typography.titleLarge,
                     modifier = Modifier.weight(1f)
                 )
-                if (existingEventId != null) {
+                if (persistedEventId != null) {
                     Box {
                         IconButton(onClick = { menuOpen = true }) {
                             Icon(
@@ -304,6 +337,22 @@ fun AppointmentSheet(
             if (remaining != null) {
                 Text(stringResource(R.string.appointment_remaining, formatCents(remaining)))
             }
+
+            HorizontalDivider(modifier = Modifier.padding(vertical = LutealSpacing.sm))
+
+            AppointmentAttachmentsSection(
+                eventId = persistedEventId,
+                selectedProfessionalId = selectedProfessionalId,
+                viewModel = viewModel,
+                onEnsureSaved = { ensureSavedForAttachments() }
+            )
+
+            AppointmentAiDerivedSections(
+                attachments = attachments,
+                canUseOpenRouter = canUseOpenRouter,
+                summarizeRunning = attachmentJob is AttachmentJobState.Running,
+                onSummarizeTranscript = { viewModel.summarize(it) }
+            )
 
             HorizontalDivider(modifier = Modifier.padding(vertical = LutealSpacing.sm))
 
