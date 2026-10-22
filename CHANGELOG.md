@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.13.1] - 2026-10-22
+
+### Fixed
+
+- Rendez-vous : le bouton d’ajout de pièce jointe reste actif dès que le rendez-vous est enregistré, même sans professionnel sélectionné.
+- Rendez-vous : un clic sur la tuile ouvre directement l’éditeur, comme les autres saisies.
+
+### Changed
+
+- Rendez-vous : suppression via une poubelle rouge en bas à gauche de l’éditeur.
+- Champs de saisie : style commun plus arrondi (`LutealTextField`) dans toute l’application.
+
 ## [0.13.0] - 2026-10-22
 
 ### Added
