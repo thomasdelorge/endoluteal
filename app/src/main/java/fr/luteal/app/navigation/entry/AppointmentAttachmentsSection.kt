@@ -59,9 +59,10 @@ fun AppointmentAttachmentsSection(
             stringResource(R.string.appointment_attachments_title),
             style = MaterialTheme.typography.titleMedium
         )
+        val canAttach = eventId != null || selectedProfessionalId != null
         Button(
             onClick = { picker.launch(arrayOf("*/*")) },
-            enabled = selectedProfessionalId != null,
+            enabled = canAttach,
             modifier = Modifier.fillMaxWidth()
         ) {
             Text(stringResource(R.string.appointment_attachment_add))
@@ -81,7 +82,7 @@ fun AppointmentAttachmentsSection(
                         }
                     }
                 },
-                enabled = selectedProfessionalId != null,
+                enabled = canAttach,
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text(stringResource(R.string.appointment_attachment_add_demo))
@@ -92,7 +93,7 @@ fun AppointmentAttachmentsSection(
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
-        if (selectedProfessionalId == null) {
+        if (!canAttach) {
             Text(
                 stringResource(R.string.appointment_attachment_need_professional),
                 style = MaterialTheme.typography.bodySmall,

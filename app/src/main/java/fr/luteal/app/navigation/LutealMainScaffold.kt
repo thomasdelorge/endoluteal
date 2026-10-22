@@ -46,7 +46,6 @@ import fr.luteal.app.navigation.entry.MedicationIntakeSheet
 import fr.luteal.app.navigation.entry.MedicationIntakeViewModel
 import fr.luteal.app.navigation.entry.CareSessionEntryViewModel
 import fr.luteal.app.navigation.entry.CareSessionSheet
-import fr.luteal.app.navigation.entry.AppointmentDetailSheet
 import fr.luteal.app.navigation.entry.AppointmentEntryViewModel
 import fr.luteal.app.navigation.entry.AppointmentReportSheet
 import fr.luteal.app.navigation.entry.AppointmentSheet
@@ -93,8 +92,6 @@ fun LutealMainScaffold(
     val appointments by agendaViewModel.appointments.collectAsStateWithLifecycle()
     val professionals by agendaViewModel.professionals.collectAsStateWithLifecycle()
     val eventDetailLabels = intakeLabels + careLabels + appointmentLabels
-    var appointmentDetailEventId by remember { mutableStateOf<String?>(null) }
-    val detailAttachments by appointmentViewModel.attachments.collectAsStateWithLifecycle()
     var selectedDestination by rememberSaveable { mutableStateOf(LutealDestination.AGENDA) }
     var intakeDate by remember { mutableStateOf<LocalDate?>(null) }
     var intakeMedicationId by remember { mutableStateOf<String?>(null) }
@@ -180,7 +177,6 @@ fun LutealMainScaffold(
         )
     } else {
         val overlayBackState = MainOverlayBackState(
-            appointmentDetailEventId = appointmentDetailEventId,
             appointmentDate = appointmentDate,
             appointmentReportEventId = appointmentReportEventId,
             recapDate = recapDate,
@@ -194,7 +190,6 @@ fun LutealMainScaffold(
         val overlayBackTarget = resolveMainOverlayBackTarget(overlayBackState)
         BackHandler(enabled = overlayBackTarget != null) {
             when (overlayBackTarget) {
-                MainOverlayBackTarget.APPOINTMENT_DETAIL -> appointmentDetailEventId = null
                 MainOverlayBackTarget.APPOINTMENT -> {
                     appointmentDate = null
                     appointmentEventId = null
@@ -318,7 +313,8 @@ fun LutealMainScaffold(
                                             hospitalEventId = event.id
                                         }
                                         JournalEventType.APPOINTMENT -> {
-                                            appointmentDetailEventId = event.id
+                                            appointmentEventId = event.id
+                                            appointmentDate = event.startAt.atZone(zone).toLocalDate()
                                         }
                                         JournalEventType.MEDICATION_INTAKE -> {
                                             intakeDate = event.startAt.atZone(zone).toLocalDate()
@@ -329,7 +325,9 @@ fun LutealMainScaffold(
                                     }
                                 },
                                 onOpenAppointmentDetail = { event ->
-                                    appointmentDetailEventId = event.id
+                                    val zone = java.time.ZoneId.of(event.zoneId)
+                                    appointmentEventId = event.id
+                                    appointmentDate = event.startAt.atZone(zone).toLocalDate()
                                 },
                                 onEditCycle = { cycleId, newStartDate ->
                                     viewModel.editCycleStartDate(cycleId, newStartDate)
@@ -341,7 +339,10 @@ fun LutealMainScaffold(
                             )
                             LutealDestination.TIMELINE -> TimelineScreen(
                                 onOpenAppointmentDetail = { eventId ->
-                                    appointmentDetailEventId = eventId
+                                    val event = events.firstOrNull { it.id == eventId } ?: return@TimelineScreen
+                                    val zone = java.time.ZoneId.of(event.zoneId)
+                                    appointmentEventId = event.id
+                                    appointmentDate = event.startAt.atZone(zone).toLocalDate()
                                 }
                             )
                             LutealDestination.MEDICATIONS -> MedsScreen(
@@ -453,30 +454,6 @@ fun LutealMainScaffold(
             viewModel = appointmentViewModel,
             onDismiss = { appointmentReportEventId = null }
         )
-    }
-
-    LaunchedEffect(appointmentDetailEventId) {
-        appointmentViewModel.watchAttachments(appointmentDetailEventId)
-    }
-
-    appointmentDetailEventId?.let { eventId ->
-        val detailEvent = events.firstOrNull { it.id == eventId }
-        val detailAppointment = appointments[eventId]
-        if (detailEvent != null && detailAppointment != null) {
-            AppointmentDetailSheet(
-                event = detailEvent,
-                appointment = detailAppointment,
-                professional = detailAppointment.professionalId?.let { professionals[it] },
-                attachments = detailAttachments,
-                onEdit = {
-                    appointmentDetailEventId = null
-                    appointmentEventId = eventId
-                    val zone = java.time.ZoneId.of(detailEvent.zoneId)
-                    appointmentDate = detailEvent.startAt.atZone(zone).toLocalDate()
-                },
-                onDismiss = { appointmentDetailEventId = null }
-            )
-        }
     }
 
     appointmentDate?.let { date ->

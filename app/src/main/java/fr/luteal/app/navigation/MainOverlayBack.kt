@@ -4,7 +4,6 @@ import java.time.LocalDate
 import java.time.YearMonth
 
 enum class MainOverlayBackTarget {
-    APPOINTMENT_DETAIL,
     APPOINTMENT,
     APPOINTMENT_REPORT,
     RECAP,
@@ -17,7 +16,6 @@ enum class MainOverlayBackTarget {
 }
 
 data class MainOverlayBackState(
-    val appointmentDetailEventId: String? = null,
     val appointmentDate: LocalDate? = null,
     val appointmentReportEventId: String? = null,
     val recapDate: LocalDate? = null,
@@ -30,7 +28,6 @@ data class MainOverlayBackState(
 )
 
 fun resolveMainOverlayBackTarget(state: MainOverlayBackState): MainOverlayBackTarget? = when {
-    state.appointmentDetailEventId != null -> MainOverlayBackTarget.APPOINTMENT_DETAIL
     state.appointmentDate != null -> MainOverlayBackTarget.APPOINTMENT
     state.appointmentReportEventId != null -> MainOverlayBackTarget.APPOINTMENT_REPORT
     state.recapDate != null -> MainOverlayBackTarget.RECAP
