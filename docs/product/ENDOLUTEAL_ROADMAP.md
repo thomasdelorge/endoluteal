@@ -9,7 +9,7 @@ Ce document est la source de vérité du découpage. Les issues GitHub sont gén
 - **Livrer tôt, sur un vrai téléphone.** Chaque milestone produit un APK installable via Obtainium. La v0.1.0 est la première installation réelle.
 - **Soustraire avant d'ajouter.** Le nettoyage (M1) réduit la base de code de moitié avant d'y construire quoi que ce soit, ce qui réduit aussi le contexte des agents.
 - **Une issue = une PR atomique**, en Conventional Commits, avec `Closes #n` et ses tests.
-- **Données de santé : rien ne sort de l'appareil.** Aucune permission `INTERNET`.
+- **Données de santé : rien ne sort de l'appareil**, sauf l'aide au CR des rendez-vous via OpenRouter (audio / transcript envoyés sur action explicite avec la clé de l'utilisatrice). Permission `INTERNET` limitée à ce flux.
 - **Enregistré vs estimé** (héritage Luteal) : ce que l'utilisatrice a saisi n'est jamais présenté comme ce que l'app a calculé.
 - **Aide, pas avis médical.** Les alertes médicamenteuses assistent, elles ne remplacent ni médecin ni pharmacien.
 

@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Rendez-vous : pièces jointes locales (tout type de fichier), transcription audio et résumé du transcript via OpenRouter (clé et modèles dans Réglages → Aide IA), langue de transcription réglable (français par défaut), découpage des longs enregistrements, diarisation si le modèle STT le supporte.
+
+### Changed
+
+- Rendez-vous : ouverture en fiche lecture (fermer / modifier) depuis l’agenda et la frise, sans lancer l’éditeur en parallèle.
+- Rendez-vous : pièces jointes en tuiles (ouverture au toucher, menu ⋮ pour ouvrir, supprimer, transcrire ou résumer).
+- Rendez-vous : conservation des pièces jointes à l’enregistrement ; transcription et résumé IA affichés dans le détail et l’éditeur (pas seulement en fichier joint).
+- Réglages : configuration OpenRouter déplacée dans le menu dédié « Aide IA (compte-rendu) », hors de la section Données.
+- Réglages IA : choix des modèles transcription et résumé via listes déroulantes avec recherche, alimentées par le catalogue OpenRouter.
+- Réglages IA : interrupteur pour activer l’aide IA (désactivé par défaut) ; sans activation, pas de chargement du catalogue OpenRouter. Clé API masquée (`***`) une fois enregistrée.
+- Développement (debug) : bouton « Audio de démo » sur les pièces jointes d’un rendez-vous pour tester transcription et résumé.
+
 ## [0.12.1] - 2026-10-21
 
 ### Fixed

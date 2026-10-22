@@ -22,7 +22,7 @@ Packages Kotlin `fr.luteal.*` conservés ; `applicationId` =
 
 ## Invariants
 
-1. **Pas de permission `INTERNET`** (données de santé hors de l'appareil).
+1. **Données de santé hors de l'appareil**, sauf aide au CR RDV : permission `INTERNET` uniquement pour OpenRouter (transcription / résumé sur action explicite, clé utilisatrice).
 2. **Enregistré vs estimé** : ne jamais présenter une saisie utilisatrice comme
    un calcul ou une prédiction.
 3. **Migrations Room** : avant le schéma 11 (app 0.9.0), un reset des versions 1 à 9
