@@ -8,7 +8,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
+import fr.luteal.core.designsystem.component.LutealTextField
 import fr.luteal.core.designsystem.component.TimeField
 import java.time.LocalTime
 import androidx.compose.material3.Text
@@ -145,7 +145,7 @@ fun AutoBackupCard(viewModel: AutoBackupViewModel = hiltViewModel()) {
                 label = stringResource(R.string.backup_hour),
                 modifier = Modifier.fillMaxWidth()
             )
-            OutlinedTextField(
+            LutealTextField(
                 value = prefs.autoBackupKeep.toString(),
                 onValueChange = { raw -> raw.toIntOrNull()?.let(viewModel::setKeep) },
                 label = { Text(stringResource(R.string.backup_keep)) },
@@ -176,7 +176,7 @@ private fun BackupPassphraseDialog(
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(LutealSpacing.sm)) {
                 Text(stringResource(R.string.backup_encrypt_dialog_body))
-                OutlinedTextField(
+                LutealTextField(
                     value = password,
                     onValueChange = { password = it; mismatch = false },
                     label = { Text(stringResource(R.string.backup_encrypt_password)) },
@@ -184,7 +184,7 @@ private fun BackupPassphraseDialog(
                     visualTransformation = PasswordVisualTransformation(),
                     modifier = Modifier.fillMaxWidth()
                 )
-                OutlinedTextField(
+                LutealTextField(
                     value = confirm,
                     onValueChange = { confirm = it; mismatch = false },
                     label = { Text(stringResource(R.string.backup_encrypt_password_confirm)) },

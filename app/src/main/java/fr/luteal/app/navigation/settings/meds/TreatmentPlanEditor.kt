@@ -15,7 +15,7 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.OutlinedTextField
+import fr.luteal.core.designsystem.component.LutealTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -73,7 +73,7 @@ fun TreatmentPlanEditor(
             verticalArrangement = Arrangement.spacedBy(LutealSpacing.sm)
         ) {
             Box(modifier = Modifier.fillMaxWidth()) {
-                OutlinedTextField(
+                LutealTextField(
                     value = query,
                     onValueChange = {
                         query = it
@@ -101,7 +101,7 @@ fun TreatmentPlanEditor(
                     }
                 }
             }
-            OutlinedTextField(
+            LutealTextField(
                 value = units,
                 onValueChange = { units = it },
                 label = { Text(stringResource(R.string.intake_units)) },

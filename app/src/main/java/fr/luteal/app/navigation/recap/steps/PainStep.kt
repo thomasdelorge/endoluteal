@@ -4,7 +4,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
+import fr.luteal.core.designsystem.component.LutealTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -106,7 +106,7 @@ fun PainStep(
                     stringResource(R.string.recap_5d_chronic_pelvic_help),
                     chronic
                 ) { chronic = it }
-                OutlinedTextField(
+                LutealTextField(
                     value = notes,
                     onValueChange = { notes = it },
                     label = { Text(stringResource(R.string.symptom_notes)) },

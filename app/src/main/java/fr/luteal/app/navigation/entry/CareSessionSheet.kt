@@ -13,7 +13,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
+import fr.luteal.core.designsystem.component.LutealTextField
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -226,7 +226,7 @@ fun CareSessionSheet(
                     }
                 }
                 if (isTens && !tensOnly) {
-                    OutlinedTextField(
+                    LutealTextField(
                         value = programName,
                         onValueChange = { programName = it },
                         label = { Text(stringResource(R.string.care_program_name)) },
@@ -261,7 +261,7 @@ fun CareSessionSheet(
                     }
                 }
             } else {
-                OutlinedTextField(
+                LutealTextField(
                     value = durationMinutes,
                     onValueChange = { durationMinutes = it.filter { ch -> ch.isDigit() } },
                     label = { Text(stringResource(R.string.care_duration)) },
@@ -270,7 +270,7 @@ fun CareSessionSheet(
             }
             Text(stringResource(R.string.care_pain_before))
             PainScale(value = painBefore, onValueChange = { painBefore = it })
-            OutlinedTextField(
+            LutealTextField(
                 value = notes,
                 onValueChange = { notes = it },
                 label = { Text(stringResource(R.string.symptom_notes)) },

@@ -10,7 +10,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
+import fr.luteal.core.designsystem.component.LutealTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -157,13 +157,13 @@ private fun TensProgramEditor(
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(LutealSpacing.sm)
         ) {
-            OutlinedTextField(
+            LutealTextField(
                 value = name,
                 onValueChange = { name = it },
                 label = { Text(stringResource(R.string.care_program_name)) },
                 modifier = Modifier.fillMaxWidth()
             )
-            OutlinedTextField(
+            LutealTextField(
                 value = duration,
                 onValueChange = { duration = it.filter { ch -> ch.isDigit() } },
                 label = { Text(stringResource(R.string.care_duration)) },

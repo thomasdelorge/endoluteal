@@ -42,7 +42,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
+import fr.luteal.core.designsystem.component.LutealTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -751,7 +751,7 @@ private fun SetPinDialog(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
 
-                OutlinedTextField(
+                LutealTextField(
                     value = pin,
                     onValueChange = { if (it.length <= 8 && it.all { c -> c.isDigit() }) pin = it },
                     label = { Text(stringResource(R.string.dialog_set_pin_label)) },
@@ -761,7 +761,7 @@ private fun SetPinDialog(
                     modifier = Modifier.fillMaxWidth()
                 )
 
-                OutlinedTextField(
+                LutealTextField(
                     value = confirmPin,
                     onValueChange = { if (it.length <= 8 && it.all { c -> c.isDigit() }) confirmPin = it },
                     label = { Text(stringResource(R.string.dialog_set_pin_confirm_label)) },
@@ -927,14 +927,14 @@ private fun NotificationSettingsCard(
                     )
 
                     if (state.notificationVisibilityMode == NotificationVisibility.CUSTOM) {
-                        OutlinedTextField(
+                        LutealTextField(
                             value = state.notificationCustomTitle,
                             onValueChange = onCustomTitleChange,
                             label = { Text(stringResource(R.string.settings_notif_custom_title_label)) },
                             singleLine = true,
                             modifier = Modifier.fillMaxWidth()
                         )
-                        OutlinedTextField(
+                        LutealTextField(
                             value = state.notificationCustomBody,
                             onValueChange = onCustomBodyChange,
                             label = { Text(stringResource(R.string.settings_notif_custom_body_label)) },
@@ -969,7 +969,7 @@ private fun ChangePinDialog(
         title = { Text(stringResource(R.string.dialog_change_pin_title)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(LutealSpacing.sm)) {
-                OutlinedTextField(
+                LutealTextField(
                     value = currentPin,
                     onValueChange = { if (it.length <= 8 && it.all { c -> c.isDigit() }) currentPin = it },
                     label = { Text(stringResource(R.string.dialog_change_pin_current_label)) },
@@ -979,7 +979,7 @@ private fun ChangePinDialog(
                     modifier = Modifier.fillMaxWidth()
                 )
 
-                OutlinedTextField(
+                LutealTextField(
                     value = newPin,
                     onValueChange = { if (it.length <= 8 && it.all { c -> c.isDigit() }) newPin = it },
                     label = { Text(stringResource(R.string.dialog_change_pin_new_label)) },
@@ -989,7 +989,7 @@ private fun ChangePinDialog(
                     modifier = Modifier.fillMaxWidth()
                 )
 
-                OutlinedTextField(
+                LutealTextField(
                     value = confirmNewPin,
                     onValueChange = { if (it.length <= 8 && it.all { c -> c.isDigit() }) confirmNewPin = it },
                     label = { Text(stringResource(R.string.dialog_change_pin_confirm_label)) },
@@ -1069,7 +1069,7 @@ private fun DisableLockDialog(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
 
-                OutlinedTextField(
+                LutealTextField(
                     value = pin,
                     onValueChange = { if (it.length <= 8 && it.all { c -> c.isDigit() }) pin = it },
                     label = { Text(stringResource(R.string.dialog_set_pin_label)) },
@@ -1355,7 +1355,7 @@ private fun ImportEncryptedBackupDialog(
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(LutealSpacing.sm)) {
                 Text(stringResource(R.string.settings_import_password_body))
-                OutlinedTextField(
+                LutealTextField(
                     value = password,
                     onValueChange = { password = it },
                     label = { Text(stringResource(R.string.backup_encrypt_password)) },

@@ -10,7 +10,7 @@ import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.FilterChip
-import androidx.compose.material3.OutlinedTextField
+import fr.luteal.core.designsystem.component.LutealTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -139,7 +139,7 @@ fun CalendarImportSettingsCard(
                     }
                 }
             )
-            OutlinedTextField(
+            LutealTextField(
                 value = keywords,
                 onValueChange = {
                     keywords = it

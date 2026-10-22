@@ -11,7 +11,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
+import fr.luteal.core.designsystem.component.LutealTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -205,7 +205,7 @@ private fun MedicationList(
         modifier = Modifier.fillMaxWidth()
     )
     var delay by rememberSaveable { mutableStateOf(followupDelay.toString()) }
-    OutlinedTextField(
+    LutealTextField(
         value = delay,
         onValueChange = { raw ->
             delay = raw.filter { it.isDigit() }
@@ -299,13 +299,13 @@ private fun MedicationForm(
             verticalArrangement = Arrangement.spacedBy(LutealSpacing.sm)
         ) {
             MedsSectionTitle(stringResource(R.string.meds_section_identity))
-            OutlinedTextField(
+            LutealTextField(
                 value = name,
                 onValueChange = { name = it },
                 label = { Text(stringResource(R.string.meds_name)) },
                 modifier = Modifier.fillMaxWidth()
             )
-            OutlinedTextField(
+            LutealTextField(
                 value = repeatHours,
                 onValueChange = { repeatHours = it.filter { ch -> ch.isDigit() } },
                 label = { Text(stringResource(R.string.meds_repeat_every_hours)) },
@@ -322,7 +322,7 @@ private fun MedicationForm(
                         rows = rows.toMutableList().also { it[index] = picked to row.second }
                     }
                 )
-                OutlinedTextField(
+                LutealTextField(
                     value = row.second,
                     onValueChange = { value ->
                         rows = rows.toMutableList().also { it[index] = row.first to value }
@@ -450,25 +450,25 @@ private fun SubstanceForm(
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(LutealSpacing.sm)
         ) {
-            OutlinedTextField(
+            LutealTextField(
                 value = name,
                 onValueChange = { name = it },
                 label = { Text(stringResource(R.string.meds_name)) },
                 modifier = Modifier.fillMaxWidth()
             )
-            OutlinedTextField(
+            LutealTextField(
                 value = maxPeriod,
                 onValueChange = { maxPeriod = it },
                 label = { Text(stringResource(R.string.meds_max_period)) },
                 modifier = Modifier.fillMaxWidth()
             )
-            OutlinedTextField(
+            LutealTextField(
                 value = everyHours,
                 onValueChange = { everyHours = it.filter { ch -> ch.isDigit() } },
                 label = { Text(stringResource(R.string.meds_every_hours)) },
                 modifier = Modifier.fillMaxWidth()
             )
-            OutlinedTextField(
+            LutealTextField(
                 value = maxDaily,
                 onValueChange = { maxDaily = it },
                 label = { Text(stringResource(R.string.meds_max_daily)) },

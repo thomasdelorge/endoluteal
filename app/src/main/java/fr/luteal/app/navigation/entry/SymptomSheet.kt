@@ -4,7 +4,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.OutlinedTextField
+import fr.luteal.core.designsystem.component.LutealTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -99,7 +99,7 @@ fun SymptomSheet(
     ) {
         DateTimeField(value = at, onValueChange = { at = it })
         BodyMap(marks = marks, onMarksChange = { marks = it })
-        OutlinedTextField(
+        LutealTextField(
             value = notes,
             onValueChange = { notes = it },
             label = { Text(stringResource(R.string.symptom_notes)) },

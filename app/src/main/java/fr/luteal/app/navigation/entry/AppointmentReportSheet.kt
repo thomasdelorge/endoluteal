@@ -11,7 +11,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
+import fr.luteal.core.designsystem.component.LutealTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -92,7 +92,7 @@ fun AppointmentReportSheet(
             TextButton(onClick = { showNewProfessional = true }) {
                 Text(stringResource(R.string.appointment_add_professional))
             }
-            OutlinedTextField(
+            LutealTextField(
                 value = report,
                 onValueChange = { report = it },
                 label = { Text(stringResource(R.string.appointment_report)) },

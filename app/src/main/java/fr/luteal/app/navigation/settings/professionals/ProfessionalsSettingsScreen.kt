@@ -10,7 +10,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
+import fr.luteal.core.designsystem.component.LutealTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -136,7 +136,7 @@ private fun ProfessionalEditor(
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(LutealSpacing.sm)
         ) {
-            OutlinedTextField(
+            LutealTextField(
                 value = name,
                 onValueChange = { name = it },
                 label = { Text(stringResource(R.string.professional_name)) },
@@ -149,26 +149,26 @@ private fun ProfessionalEditor(
                 onSelect = { picked -> specialty = Specialty.fromStored(picked) }
             )
             if (specialty == Specialty.OTHER) {
-                OutlinedTextField(
+                LutealTextField(
                     value = custom,
                     onValueChange = { custom = it },
                     label = { Text(stringResource(R.string.professional_custom_specialty)) },
                     modifier = Modifier.fillMaxWidth()
                 )
             }
-            OutlinedTextField(
+            LutealTextField(
                 value = place,
                 onValueChange = { place = it },
                 label = { Text(stringResource(R.string.professional_place)) },
                 modifier = Modifier.fillMaxWidth()
             )
-            OutlinedTextField(
+            LutealTextField(
                 value = phone,
                 onValueChange = { phone = it },
                 label = { Text(stringResource(R.string.professional_phone)) },
                 modifier = Modifier.fillMaxWidth()
             )
-            OutlinedTextField(
+            LutealTextField(
                 value = notes,
                 onValueChange = { notes = it },
                 label = { Text(stringResource(R.string.professional_notes)) },

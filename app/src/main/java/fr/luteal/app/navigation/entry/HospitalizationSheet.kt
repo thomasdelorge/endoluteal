@@ -6,7 +6,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
+import fr.luteal.core.designsystem.component.LutealTextField
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -134,13 +134,13 @@ fun HospitalizationSheet(
                 Text(stringResource(R.string.hospital_discharge))
                 DateTimeField(value = dischargeAt, onValueChange = { dischargeAt = it })
             }
-            OutlinedTextField(
+            LutealTextField(
                 value = place,
                 onValueChange = { place = it },
                 label = { Text(stringResource(R.string.hospital_place)) },
                 modifier = Modifier.fillMaxWidth()
             )
-            OutlinedTextField(
+            LutealTextField(
                 value = reason,
                 onValueChange = { reason = it },
                 label = { Text(stringResource(R.string.hospital_reason)) },
@@ -224,7 +224,7 @@ fun HospitalizationSheet(
                 )
             }
 
-            OutlinedTextField(
+            LutealTextField(
                 value = notes,
                 onValueChange = { notes = it },
                 label = { Text(stringResource(R.string.symptom_notes)) },
@@ -282,19 +282,19 @@ private fun ExamDialog(
         title = { Text(stringResource(R.string.hospital_exams)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(LutealSpacing.xs)) {
-                OutlinedTextField(
+                LutealTextField(
                     value = draft.name,
                     onValueChange = { onChange(draft.copy(name = it)) },
                     label = { Text(stringResource(R.string.hospital_exam_name)) },
                     modifier = Modifier.fillMaxWidth()
                 )
-                OutlinedTextField(
+                LutealTextField(
                     value = draft.date,
                     onValueChange = { onChange(draft.copy(date = it)) },
                     label = { Text(stringResource(R.string.hospital_exam_date)) },
                     modifier = Modifier.fillMaxWidth()
                 )
-                OutlinedTextField(
+                LutealTextField(
                     value = draft.result,
                     onValueChange = { onChange(draft.copy(result = it)) },
                     label = { Text(stringResource(R.string.hospital_exam_result)) },
@@ -328,13 +328,13 @@ private fun MedDialog(
         title = { Text(stringResource(R.string.hospital_medications)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(LutealSpacing.xs)) {
-                OutlinedTextField(
+                LutealTextField(
                     value = draft.freeText,
                     onValueChange = { onChange(draft.copy(freeText = it)) },
                     label = { Text(stringResource(R.string.hospital_med_name)) },
                     modifier = Modifier.fillMaxWidth()
                 )
-                OutlinedTextField(
+                LutealTextField(
                     value = draft.administeredAt,
                     onValueChange = { onChange(draft.copy(administeredAt = it)) },
                     label = { Text(stringResource(R.string.hospital_med_time)) },
