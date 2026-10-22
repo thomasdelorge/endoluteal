@@ -28,6 +28,7 @@ data class LutealBackupPayload(
     @SerialName("care_types") val careTypes: List<CareTypeBackupDto> = emptyList(),
     @SerialName("professionals") val professionals: List<ProfessionalBackupDto> = emptyList(),
     @SerialName("appointments") val appointments: List<AppointmentBackupDto> = emptyList(),
+    @SerialName("appointment_attachments") val appointmentAttachments: List<AppointmentAttachmentBackupDto> = emptyList(),
     @SerialName("daily_recaps") val dailyRecaps: List<DailyRecapBackupDto> = emptyList(),
     @SerialName("questionnaire_results") val questionnaireResults: List<QuestionnaireResultBackupDto> = emptyList(),
     @SerialName("preferences") val preferences: UserPreferencesBackupDto = UserPreferencesBackupDto()
@@ -213,6 +214,20 @@ data class ProfessionalBackupDto(
     @SerialName("place") val place: String = "",
     @SerialName("phone") val phone: String = "",
     @SerialName("notes") val notes: String = ""
+)
+
+@Serializable
+data class AppointmentAttachmentBackupDto(
+    @SerialName("id") val id: String,
+    @SerialName("event_id") val eventId: String,
+    @SerialName("role") val role: String,
+    @SerialName("display_name") val displayName: String,
+    @SerialName("mime_type") val mimeType: String,
+    @SerialName("relative_path") val relativePath: String,
+    @SerialName("size_bytes") val sizeBytes: Long,
+    @SerialName("created_at") val createdAt: String,
+    @SerialName("source_id") val sourceId: String? = null,
+    @SerialName("content_base64") val contentBase64: String
 )
 
 @Serializable

@@ -115,11 +115,24 @@ class RoomSchemaHarnessTest {
         }
     }
 
+    @Test
+    fun migratesAppointmentAttachmentsFrom15To16() {
+        helper.createDatabase(MIGRATION_15_DB, 15).close()
+        helper.runMigrationsAndValidate(MIGRATION_15_DB, 16, true, MIGRATION_15_16).use { db ->
+            db.query(
+                "SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'appointment_attachments'"
+            ).use { cursor ->
+                assertTrue(cursor.moveToFirst())
+            }
+        }
+    }
+
     companion object {
         private const val TEST_DB = "endoluteal-schema-harness-test.db"
         private const val MIGRATION_DB = "endoluteal-migration-11-12.db"
         private const val MIGRATION_12_DB = "endoluteal-migration-12-13.db"
         private const val MIGRATION_13_DB = "endoluteal-migration-13-14.db"
         private const val MIGRATION_14_DB = "endoluteal-migration-14-15.db"
+        private const val MIGRATION_15_DB = "endoluteal-migration-15-16.db"
     }
 }

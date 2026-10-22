@@ -3,6 +3,7 @@ package fr.luteal.core.data
 import android.content.Context
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
+import fr.luteal.core.data.appointment.AppointmentAttachmentStorage
 import fr.luteal.core.data.backup.AutoBackupPassphraseStore
 import fr.luteal.core.data.datastore.UserPreferencesDataStore
 import fr.luteal.core.data.entity.CycleEntity
@@ -68,6 +69,8 @@ class DataImportManagerTest {
             careTypeDao = database.careTypeDao(),
             professionalDao = database.professionalDao(),
             appointmentDao = database.appointmentDao(),
+            appointmentAttachmentDao = database.appointmentAttachmentDao(),
+            appointmentAttachmentStorage = AppointmentAttachmentStorage(context),
             dailyRecapDao = database.dailyRecapDao(),
             questionnaireResultDao = database.questionnaireResultDao(),
             userPreferencesDataStore = userPreferencesDataStore,
@@ -87,6 +90,8 @@ class DataImportManagerTest {
             careTypeDao = database.careTypeDao(),
             professionalDao = database.professionalDao(),
             appointmentDao = database.appointmentDao(),
+            appointmentAttachmentDao = database.appointmentAttachmentDao(),
+            appointmentAttachmentStorage = AppointmentAttachmentStorage(context),
             dailyRecapDao = database.dailyRecapDao(),
             questionnaireResultDao = database.questionnaireResultDao(),
             userPreferencesDataStore = userPreferencesDataStore

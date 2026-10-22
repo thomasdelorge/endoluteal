@@ -3,6 +3,8 @@ package fr.luteal.core.data
 import androidx.room.withTransaction
 import fr.luteal.core.data.datastore.UserPreferencesDataStore
 import fr.luteal.core.data.entity.BiomarkerObservationEntity
+import fr.luteal.core.data.appointment.AppointmentAttachmentStorage
+import fr.luteal.core.data.entity.AppointmentAttachmentEntity
 import fr.luteal.core.data.entity.AppointmentEntity
 import fr.luteal.core.data.entity.CareTypeEntity
 import fr.luteal.core.data.backup.BackupCrypto
@@ -21,6 +23,7 @@ import fr.luteal.core.data.entity.SubstanceEntity
 import fr.luteal.core.data.entity.SymptomLogEntity
 import fr.luteal.core.data.entity.TreatmentPlanEntity
 import fr.luteal.core.data.local.BiomarkerDao
+import fr.luteal.core.data.local.AppointmentAttachmentDao
 import fr.luteal.core.data.local.AppointmentDao
 import fr.luteal.core.data.local.DailyRecapDao
 import fr.luteal.core.data.local.QuestionnaireResultDao
@@ -67,6 +70,8 @@ class DataImportManager @Inject constructor(
     private val careTypeDao: CareTypeDao,
     private val professionalDao: ProfessionalDao,
     private val appointmentDao: AppointmentDao,
+    private val appointmentAttachmentDao: AppointmentAttachmentDao,
+    private val appointmentAttachmentStorage: AppointmentAttachmentStorage,
     private val dailyRecapDao: DailyRecapDao,
     private val questionnaireResultDao: QuestionnaireResultDao,
     private val userPreferencesDataStore: UserPreferencesDataStore
@@ -158,6 +163,8 @@ class DataImportManager @Inject constructor(
                         medicationIntakeDao.deleteAll()
                         treatmentPlanDao.deleteAll()
                         careTypeDao.deleteAll()
+                        appointmentAttachmentDao.deleteAll()
+                        appointmentAttachmentStorage.deleteAll()
                         appointmentDao.deleteAll()
                         professionalDao.deleteAll()
                         dailyRecapDao.deleteAll()
@@ -470,6 +477,31 @@ class DataImportManager @Inject constructor(
                                 reimbursementStatus = appointment.reimbursementStatus,
                                 cpamCents = appointment.cpamCents,
                                 mutuelleCents = appointment.mutuelleCents
+                            )
+                        )
+                    }
+                    for (attachment in payload.appointmentAttachments) {
+                        if (attachment.id.isBlank() || attachment.eventId.isBlank()) continue
+                        val bytes = runCatching {
+                            android.util.Base64.decode(attachment.contentBase64, android.util.Base64.DEFAULT)
+                        }.getOrNull() ?: continue
+                        val dest = appointmentAttachmentStorage.fileFor(attachment.relativePath)
+                        dest.parentFile?.mkdirs()
+                        dest.writeBytes(bytes)
+                        val createdAt = runCatching {
+                            Instant.parse(attachment.createdAt).toEpochMilli()
+                        }.getOrDefault(System.currentTimeMillis())
+                        appointmentAttachmentDao.upsert(
+                            AppointmentAttachmentEntity(
+                                id = attachment.id,
+                                eventId = attachment.eventId,
+                                role = attachment.role,
+                                displayName = attachment.displayName,
+                                mimeType = attachment.mimeType,
+                                relativePath = attachment.relativePath,
+                                sizeBytes = attachment.sizeBytes,
+                                createdAt = createdAt,
+                                sourceId = attachment.sourceId
                             )
                         )
                     }

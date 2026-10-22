@@ -2,7 +2,10 @@ package fr.luteal.core.data
 
 import fr.luteal.core.data.datastore.UserPreferencesDataStore
 import fr.luteal.core.data.local.BiomarkerDao
+import fr.luteal.core.data.appointment.AppointmentAttachmentStorage
+import fr.luteal.core.data.local.AppointmentAttachmentDao
 import fr.luteal.core.data.local.AppointmentDao
+import fr.luteal.core.model.AppointmentAttachmentBackupDto
 import fr.luteal.core.data.backup.AutoBackupPassphraseStore
 import fr.luteal.core.data.backup.MissingBackupPassphrase
 import fr.luteal.core.data.backup.BackupCrypto
@@ -61,6 +64,8 @@ class DataExportManager @Inject constructor(
     private val careTypeDao: CareTypeDao,
     private val professionalDao: ProfessionalDao,
     private val appointmentDao: AppointmentDao,
+    private val appointmentAttachmentDao: AppointmentAttachmentDao,
+    private val appointmentAttachmentStorage: AppointmentAttachmentStorage,
     private val dailyRecapDao: DailyRecapDao,
     private val questionnaireResultDao: QuestionnaireResultDao,
     private val userPreferencesDataStore: UserPreferencesDataStore,
@@ -247,6 +252,23 @@ class DataExportManager @Inject constructor(
                 notes = entity.notes
             )
         }
+        val appointmentAttachments = appointmentAttachmentDao.allOnce().mapNotNull { entity ->
+            val file = appointmentAttachmentStorage.fileFor(entity.relativePath)
+            if (!file.exists()) return@mapNotNull null
+            val bytes = runCatching { file.readBytes() }.getOrNull() ?: return@mapNotNull null
+            AppointmentAttachmentBackupDto(
+                id = entity.id,
+                eventId = entity.eventId,
+                role = entity.role,
+                displayName = entity.displayName,
+                mimeType = entity.mimeType,
+                relativePath = entity.relativePath,
+                sizeBytes = entity.sizeBytes,
+                createdAt = Instant.ofEpochMilli(entity.createdAt).toString(),
+                sourceId = entity.sourceId,
+                contentBase64 = android.util.Base64.encodeToString(bytes, android.util.Base64.NO_WRAP)
+            )
+        }
         val appointments = appointmentDao.allOnce().map { entity ->
             AppointmentBackupDto(
                 eventId = entity.eventId,
@@ -346,6 +368,7 @@ class DataExportManager @Inject constructor(
             careTypes = careTypes,
             professionals = professionals,
             appointments = appointments,
+            appointmentAttachments = appointmentAttachments,
             dailyRecaps = dailyRecaps,
             questionnaireResults = questionnaireResults,
             preferences = preferencesDto

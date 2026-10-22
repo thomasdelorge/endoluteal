@@ -89,3 +89,36 @@ val MIGRATION_14_15 = object : Migration(14, 15) {
         db.execSQL("ALTER TABLE medications ADD COLUMN repeatEveryHours INTEGER")
     }
 }
+
+val MIGRATION_15_16 = object : Migration(15, 16) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            """
+            CREATE TABLE IF NOT EXISTS `appointment_attachments` (
+                `id` TEXT NOT NULL,
+                `eventId` TEXT NOT NULL,
+                `role` TEXT NOT NULL,
+                `displayName` TEXT NOT NULL,
+                `mimeType` TEXT NOT NULL,
+                `relativePath` TEXT NOT NULL,
+                `sizeBytes` INTEGER NOT NULL,
+                `createdAt` INTEGER NOT NULL,
+                `sourceId` TEXT,
+                PRIMARY KEY(`id`),
+                FOREIGN KEY(`eventId`) REFERENCES `journal_events`(`id`)
+                    ON UPDATE NO ACTION ON DELETE CASCADE,
+                FOREIGN KEY(`sourceId`) REFERENCES `appointment_attachments`(`id`)
+                    ON UPDATE NO ACTION ON DELETE CASCADE
+            )
+            """.trimIndent()
+        )
+        db.execSQL(
+            "CREATE INDEX IF NOT EXISTS `index_appointment_attachments_eventId` " +
+                "ON `appointment_attachments` (`eventId`)"
+        )
+        db.execSQL(
+            "CREATE INDEX IF NOT EXISTS `index_appointment_attachments_sourceId` " +
+                "ON `appointment_attachments` (`sourceId`)"
+        )
+    }
+}

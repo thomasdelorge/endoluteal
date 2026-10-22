@@ -22,6 +22,8 @@ import fr.luteal.core.data.local.MIGRATION_11_12
 import fr.luteal.core.data.local.MIGRATION_12_13
 import fr.luteal.core.data.local.MIGRATION_13_14
 import fr.luteal.core.data.local.MIGRATION_14_15
+import fr.luteal.core.data.local.MIGRATION_15_16
+import fr.luteal.core.data.local.AppointmentAttachmentDao
 import fr.luteal.core.data.local.MedicationDao
 import fr.luteal.core.data.local.MedicationIntakeDao
 import fr.luteal.core.data.local.ReminderDao
@@ -49,7 +51,8 @@ object DatabaseModule {
                 MIGRATION_11_12,
                 MIGRATION_12_13,
                 MIGRATION_13_14,
-                MIGRATION_14_15
+                MIGRATION_14_15,
+                MIGRATION_15_16
             )
             // Versions below 10 may wipe. 10 starts MIGRATION_10_11, so Room
             // forbids listing it here. From 11, a missing migration fails open.
@@ -108,6 +111,11 @@ object DatabaseModule {
     @Provides
     @Singleton
     fun provideAppointmentDao(database: LutealDatabase): AppointmentDao = database.appointmentDao()
+
+    @Provides
+    @Singleton
+    fun provideAppointmentAttachmentDao(database: LutealDatabase): AppointmentAttachmentDao =
+        database.appointmentAttachmentDao()
 
     @Provides
     @Singleton

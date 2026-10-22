@@ -153,6 +153,8 @@ class MedicationCatalogTest {
             database.careTypeDao(),
             database.professionalDao(),
             database.appointmentDao(),
+            database.appointmentAttachmentDao(),
+            fr.luteal.core.data.appointment.AppointmentAttachmentStorage(context),
             database.dailyRecapDao(),
             database.questionnaireResultDao(),
             preferences,
@@ -177,6 +179,8 @@ class MedicationCatalogTest {
             database.careTypeDao(),
             database.professionalDao(),
             database.appointmentDao(),
+            database.appointmentAttachmentDao(),
+            fr.luteal.core.data.appointment.AppointmentAttachmentStorage(context),
             database.dailyRecapDao(),
             database.questionnaireResultDao(),
             preferences

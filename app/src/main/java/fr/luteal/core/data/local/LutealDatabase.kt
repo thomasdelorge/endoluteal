@@ -4,6 +4,7 @@ import androidx.room.Database
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 import fr.luteal.core.data.entity.BiomarkerObservationEntity
+import fr.luteal.core.data.entity.AppointmentAttachmentEntity
 import fr.luteal.core.data.entity.AppointmentEntity
 import fr.luteal.core.data.entity.CareTypeEntity
 import fr.luteal.core.data.entity.ProfessionalEntity
@@ -44,10 +45,11 @@ import fr.luteal.core.data.entity.UserProfileEntity
         CareTypeEntity::class,
         ProfessionalEntity::class,
         AppointmentEntity::class,
+        AppointmentAttachmentEntity::class,
         DailyRecapEntity::class,
         QuestionnaireResultEntity::class
     ],
-    version = 15,
+    version = 16,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
@@ -65,6 +67,7 @@ abstract class LutealDatabase : RoomDatabase() {
     abstract fun careTypeDao(): CareTypeDao
     abstract fun professionalDao(): ProfessionalDao
     abstract fun appointmentDao(): AppointmentDao
+    abstract fun appointmentAttachmentDao(): AppointmentAttachmentDao
     abstract fun dailyRecapDao(): DailyRecapDao
     abstract fun questionnaireResultDao(): QuestionnaireResultDao
 }

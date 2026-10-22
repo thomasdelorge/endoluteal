@@ -3,7 +3,9 @@ package fr.luteal.core.data
 import android.content.Context
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
+import fr.luteal.core.data.appointment.AppointmentAttachmentStorage
 import fr.luteal.core.data.backup.AutoBackupPassphraseStore
+import fr.luteal.core.data.openrouter.OpenRouterApiKeyStore
 import fr.luteal.core.data.backup.MissingBackupPassphrase
 import fr.luteal.core.data.datastore.UserPreferencesDataStore
 import fr.luteal.core.data.entity.CycleEntity
@@ -58,6 +60,8 @@ class DataExportManagerTest {
             careTypeDao = database.careTypeDao(),
             professionalDao = database.professionalDao(),
             appointmentDao = database.appointmentDao(),
+            appointmentAttachmentDao = database.appointmentAttachmentDao(),
+            appointmentAttachmentStorage = AppointmentAttachmentStorage(context),
             dailyRecapDao = database.dailyRecapDao(),
             questionnaireResultDao = database.questionnaireResultDao(),
             userPreferencesDataStore = userPreferencesDataStore,
@@ -68,7 +72,9 @@ class DataExportManagerTest {
         purgeManager = LocalDataPurgeManager(
             database = database,
             userPreferencesDataStore = userPreferencesDataStore,
-            pinCryptoManager = PinCryptoManager(InMemoryPinSecretStore())
+            pinCryptoManager = PinCryptoManager(InMemoryPinSecretStore()),
+            appointmentAttachmentStorage = AppointmentAttachmentStorage(context),
+            openRouterApiKeyStore = OpenRouterApiKeyStore(context)
         )
     }
 
